@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@theme {
+  --color-mars-950: #0c0a09;
+  --color-mars-900: #1c1917;
+  --color-mars-800: #292524;
+  --color-mars-700: #44403c;
+  --color-mars-600: #57534e;
+  --color-mars-500: #78716c;
+  --color-mars-400: #a8a29e;
+  --color-mars-300: #d6d3d1;
+
+  --color-rust-500: #c2410c;
+  --color-rust-400: #ea580c;
+  --color-rust-300: #fb923c;
+
+  --color-bio-500: #16a34a;
+  --color-bio-400: #22c55e;
+  --color-bio-300: #4ade80;
+
+  --color-water-500: #0284c7;
+  --color-water-400: #0ea5e9;
+  --color-water-300: #38bdf8;
+
+  --color-sun-500: #ca8a04;
+  --color-sun-400: #eab308;
+  --color-sun-300: #facc15;
+
+  --color-alert-500: #dc2626;
+  --color-alert-400: #ef4444;
+  --color-alert-300: #f87171;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #44403c transparent;
+}
+
+body {
+  margin: 0;
+  background: #0c0a09;
+  color: #d6d3d1;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+/* Animated gradient background for the main page */
+.mars-bg {
+  background: 
+    radial-gradient(ellipse at 20% 80%, rgba(194, 65, 12, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(234, 88, 12, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(28, 25, 23, 1) 0%, rgba(12, 10, 9, 1) 100%);
+}
+
+/* Glass panel effect */
+.glass {
+  background: rgba(28, 25, 23, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(68, 64, 60, 0.5);
+}
+
+.glass-bright {
+  background: rgba(41, 37, 36, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(68, 64, 60, 0.6);
+}
+
+/* Glow effects */
+.glow-green {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15), 0 0 40px rgba(34, 197, 94, 0.05);
+}
+
+.glow-orange {
+  box-shadow: 0 0 20px rgba(234, 88, 12, 0.2), 0 0 40px rgba(234, 88, 12, 0.05);
+}
+
+.glow-blue {
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.15), 0 0 40px rgba(14, 165, 233, 0.05);
+}
+
+.glow-red {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.2), 0 0 40px rgba(239, 68, 68, 0.05);
+}
+
+/* Pulse animation for alerts */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.pulse-alert {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Growing animation for crops */
+@keyframes grow-up {
+  from { transform: scaleY(0); transform-origin: bottom; }
+  to { transform: scaleY(1); transform-origin: bottom; }
+}
+
+/* Smooth number transitions */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
