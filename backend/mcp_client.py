@@ -75,12 +75,15 @@ class MCPClient:
             "uri": uri
         })
 
-    async def query_knowledge_base(self, query: str) -> str:
+    async def query_knowledge_base(self, query: str, max_results: int = 5) -> str:
         """
         Query the Mars crop knowledge base with a natural language question
         """
-        # Try to call the retrieval tool
-        result = await self.call_tool("retrieve", {"query": query})
+        # Call the knowledge base retrieval tool
+        result = await self.call_tool("kb-start-hack-target___knowledge_base_retrieve", {
+            "query": query,
+            "max_results": max_results
+        })
 
         if "result" in result:
             return self._format_result(result["result"])
@@ -91,13 +94,35 @@ class MCPClient:
     def _format_result(self, result: Any) -> str:
         """Format the MCP result for display"""
         if isinstance(result, dict):
+            # Handle the nested response format from Syngenta KB
             if "content" in result:
                 contents = result["content"]
                 if isinstance(contents, list):
-                    return "\n\n".join([
-                        c.get("text", str(c)) if isinstance(c, dict) else str(c)
-                        for c in contents
-                    ])
+                    formatted_chunks = []
+                    for c in contents:
+                        if isinstance(c, dict) and "text" in c:
+                            text = c["text"]
+                            # Parse the nested JSON response
+                            try:
+                                parsed = json.loads(text)
+                                if "statusCode" in parsed and "body" in parsed:
+                                    body = json.loads(parsed["body"])
+                                    if "retrieved_chunks" in body:
+                                        for chunk in body["retrieved_chunks"]:
+                                            content = chunk.get("content", "")
+                                            source = chunk.get("location", {}).get("s3Location", {}).get("uri", "")
+                                            if source:
+                                                source = source.split("/")[-1]  # Get filename
+                                            formatted_chunks.append(f"---\n📄 Source: {source}\n\n{content[:1500]}...")
+                                        return "\n\n".join(formatted_chunks[:3])  # Top 3 results
+                            except:
+                                pass
+                            formatted_chunks.append(text)
+                        elif isinstance(c, dict):
+                            formatted_chunks.append(str(c))
+                        else:
+                            formatted_chunks.append(str(c))
+                    return "\n\n".join(formatted_chunks)
                 return str(contents)
             return json.dumps(result, indent=2)
         return str(result)
