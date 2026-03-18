@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>START Hack 2026 // Syngenta — Martian Greenhouse AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --g:#3dff8f;--gd:#1a6e3d;--a:#ffb84d;--r:#ff4f4f;--b:#5ab4ff;--p:#cc88ff;
+  --bg:#05090a;--bg2:#080f0b;--pan:rgba(6,16,10,0.93);
+  --bdr:rgba(61,255,143,0.18);--bdr2:rgba(61,255,143,0.35);--mut:#3a6649;--txt:#bbeece
+}
+body{background:var(--bg);font-family:'Space Mono',monospace;color:var(--txt);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size:200px;opacity:.5}
+body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)}
+
+/* LAYOUT */
+.wrap{position:relative;z-index:2;display:grid;grid-template-rows:auto 1fr auto;min-height:100vh;max-width:1400px;margin:0 auto;padding:0 28px}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 14px;border-bottom:1px solid var(--bdr);animation:fadeDown .6s ease both;gap:16px;flex-wrap:wrap}
+.logo{display:flex;flex-direction:column;gap:3px}
+.logo-tag{font-size:9px;letter-spacing:.4em;color:var(--mut);text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.logo-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--r);box-shadow:0 0 6px var(--r);animation:blink .9s infinite}
+.logo-name{font-family:'Orbitron',sans-serif;font-size:clamp(14px,2vw,20px);font-weight:900;color:#fff;letter-spacing:.06em}
+.logo-name span{color:var(--g)}
+.header-center{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.hbtn{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.15em;text-transform:uppercase;padding:5px 11px;border:1px solid var(--bdr);border-radius:3px;background:transparent;color:var(--mut);cursor:pointer;transition:all .2s}
+.hbtn:hover,.hbtn.active{background:rgba(61,255,143,.08);border-color:var(--g);color:var(--g)}
+.hbtn.alert-btn{border-color:rgba(255,79,79,.35);color:var(--r)}
+.hbtn.alert-btn:hover{background:rgba(255,79,79,.08)}
+.header-right{display:flex;align-items:center;gap:16px}
+.sol-info{text-align:right}
+.sol-info .big{font-family:'Orbitron',sans-serif;font-size:20px;color:var(--g);font-weight:700;line-height:1}
+.sol-info .sm{font-size:8px;letter-spacing:.2em;color:var(--mut);margin-top:3px}
+.partner{font-size:9px;color:var(--mut);letter-spacing:.1em;text-align:right;border-left:1px solid var(--bdr);padding-left:14px}
+.partner strong{display:block;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--a);letter-spacing:.08em;margin-top:2px}
+
+/* ALERT BANNER */
+#alert-banner{position:fixed;top:0;left:0;right:0;z-index:300;background:rgba(255,79,79,.1);border-bottom:1px solid rgba(255,79,79,.35);padding:8px 28px;display:flex;align-items:center;gap:12px;font-size:10px;letter-spacing:.12em;color:var(--r);transform:translateY(-100%);transition:transform .4s ease}
+#alert-banner.show{transform:translateY(0)}
+.al-icon{animation:blink .6s infinite}
+.al-dismiss{margin-left:auto;cursor:pointer;opacity:.6;font-size:10px;padding:2px 8px;border:1px solid rgba(255,79,79,.4);border-radius:2px;transition:opacity .2s}
+.al-dismiss:hover{opacity:1}
+
+/* TOAST STACK */
+#toast-stack{position:fixed;bottom:80px;right:28px;z-index:200;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none;max-width:300px}
+.toast{background:var(--pan);border:1px solid var(--bdr);border-left:3px solid var(--g);border-radius:4px;padding:10px 14px;font-size:9px;line-height:1.7;backdrop-filter:blur(12px);pointer-events:all;transform:translateX(120%);transition:transform .35s ease;width:280px}
+.toast.show{transform:translateX(0)}
+.toast.warn{border-left-color:var(--a)}.toast.warn .t-title{color:var(--a)}
+.toast.alert{border-left-color:var(--r)}.toast.alert .t-title{color:var(--r)}
+.toast.info{border-left-color:var(--b)}.toast.info .t-title{color:var(--b)}
+.t-title{font-family:'Orbitron',sans-serif;font-size:9px;margin-bottom:3px;color:var(--g)}
+.t-body{color:var(--mut)}
+.t-close{float:right;cursor:pointer;color:var(--mut);margin-left:8px;line-height:1}
+.t-close:hover{color:var(--txt)}
+
+/* MAIN */
+main{display:grid;grid-template-columns:260px 1fr 240px;grid-template-rows:1fr auto;gap:10px;padding:10px 0}
+
+/* PANELS */
+.panel{background:var(--pan);border:1px solid var(--bdr);border-radius:6px;backdrop-filter:blur(8px);overflow:hidden;position:relative}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--bdr);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--mut)}
+.panel-head .dot{width:5px;height:5px;border-radius:50%;background:var(--g);box-shadow:0 0 6px var(--g);animation:blink 1.2s infinite}
+.panel-head .dot.amber{background:var(--a);box-shadow:0 0 6px var(--a)}
+.panel-head .dot.red{background:var(--r);box-shadow:0 0 6px var(--r)}
+.panel-body{padding:12px}
+
+/* VIEWPORT */
+.viewport{grid-row:1/3;grid-column:2;background:radial-gradient(ellipse at 50% 70%,rgba(61,255,143,.04) 0%,transparent 65%),var(--bg2);border:1px solid var(--bdr);border-radius:6px;position:relative;overflow:hidden;min-height:620px;cursor:crosshair}
+.viewport::before{content:'';position:absolute;bottom:0;left:0;right:0;height:38%;background:linear-gradient(180deg,transparent,rgba(100,38,10,.55),rgba(70,22,5,.85));z-index:1;pointer-events:none}
+.vp-label{position:absolute;top:11px;left:13px;z-index:10;font-size:8px;letter-spacing:.25em;color:var(--g);text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.vp-label::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--r);box-shadow:0 0 6px var(--r);animation:blink .8s infinite}
+.vp-corner{position:absolute;z-index:10;width:12px;height:12px;border-color:var(--g);border-style:solid;opacity:.4}
+.vp-corner.tl{top:8px;right:11px;border-width:1px 1px 0 0}
+.vp-corner.br{bottom:8px;right:11px;border-width:0 0 1px 1px}
+.scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+#scene-svg{width:100%;height:100%;overflow:visible}
+.click-hint{position:absolute;bottom:11px;left:13px;z-index:10;font-size:8px;color:var(--mut);letter-spacing:.12em;display:flex;align-items:center;gap:5px}
+.click-hint::before{content:'◎';color:var(--g);font-size:10px}
+
+/* WEATHER STRIP inside viewport */
+#weather-strip{position:absolute;top:11px;right:50px;z-index:10;display:flex;gap:10px;font-size:8px;color:var(--mut);letter-spacing:.1em;align-items:center}
+#weather-strip span{color:var(--a)}
+
+/* POPUP */
+#detail-popup{position:absolute;z-index:50;background:rgba(3,10,6,.97);border:1px solid var(--bdr2);border-radius:5px;padding:13px 15px;min-width:205px;max-width:245px;pointer-events:all;backdrop-filter:blur(20px);box-shadow:0 0 40px rgba(61,255,143,.06);transform:scale(.92);opacity:0;transition:all .2s ease;font-size:9px;line-height:1.85}
+#detail-popup.visible{transform:scale(1);opacity:1}
+#detail-popup .dp-title{font-family:'Orbitron',sans-serif;font-size:10px;color:var(--g);margin-bottom:8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bdr);padding-bottom:7px}
+#detail-popup .dp-close{margin-left:auto;cursor:pointer;color:var(--mut);transition:color .2s}
+#detail-popup .dp-close:hover{color:var(--r)}
+#detail-popup .dp-row{display:flex;justify-content:space-between;gap:8px}
+#detail-popup .dp-k{color:var(--mut)}
+#detail-popup .dp-v{color:var(--g)}
+#detail-popup .dp-v.warn{color:var(--a)}
+#detail-popup .dp-v.err{color:var(--r)}
+#detail-popup .dp-sparkline{margin:8px 0 4px;border-top:1px solid var(--bdr);padding-top:8px}
+#detail-popup .dp-sparkline canvas{width:100%!important;height:40px!important}
+#detail-popup .dp-btn{margin-top:8px;width:100%;padding:5px;border:1px solid var(--bdr);border-radius:3px;background:rgba(61,255,143,.04);color:var(--g);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.12em;cursor:pointer;text-transform:uppercase;transition:all .2s}
+#detail-popup .dp-btn:hover{background:rgba(61,255,143,.1);border-color:var(--g)}
+#detail-popup .dp-btn.red{border-color:rgba(255,79,79,.3);color:var(--r);background:rgba(255,79,79,.03)}
+#detail-popup .dp-btn.red:hover{background:rgba(255,79,79,.09)}
+
+/* ALERT HISTORY DRAWER */
+#alert-drawer{position:fixed;right:-340px;top:0;bottom:0;width:320px;z-index:150;background:rgba(3,8,5,.97);border-left:1px solid var(--bdr);padding:20px 18px;overflow-y:auto;transition:right .4s ease;backdrop-filter:blur(20px)}
+#alert-drawer.open{right:0}
+#alert-drawer h2{font-family:'Orbitron',sans-serif;font-size:11px;color:var(--g);letter-spacing:.2em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+#alert-drawer .drawer-close{cursor:pointer;color:var(--mut);font-size:16px;transition:color .2s}
+#alert-drawer .drawer-close:hover{color:var(--r)}
+.alert-item{border:1px solid var(--bdr);border-radius:3px;padding:9px 11px;margin-bottom:8px;font-size:8px;line-height:1.7}
+.alert-item .ai-time{color:var(--mut);letter-spacing:.1em;margin-bottom:3px}
+.alert-item .ai-msg{color:var(--txt)}
+.alert-item.critical{border-left:2px solid var(--r)}.alert-item.critical .ai-msg{color:var(--r)}
+.alert-item.warning{border-left:2px solid var(--a)}.alert-item.warning .ai-msg{color:var(--a)}
+.alert-item.info{border-left:2px solid var(--b)}.alert-item.info .ai-msg{color:var(--b)}
+.alert-item.ok{border-left:2px solid var(--g)}.alert-item.ok .ai-msg{color:var(--g)}
+
+/* SHORTCUT OVERLAY */
+#shortcut-overlay{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+#shortcut-overlay.open{display:flex}
+.shortcut-box{background:rgba(3,10,6,.98);border:1px solid var(--bdr2);border-radius:6px;padding:22px 28px;min-width:320px}
+.shortcut-box h2{font-family:'Orbitron',sans-serif;font-size:12px;color:var(--g);letter-spacing:.2em;margin-bottom:14px;text-align:center}
+.sc-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:9px}
+.sc-row:last-child{border-bottom:none}
+.sc-k{color:var(--mut)}
+.sc-v{font-family:'Orbitron',sans-serif;font-size:9px;color:var(--txt);padding:2px 6px;border:1px solid var(--bdr);border-radius:2px}
+
+/* LEFT COLUMN */
+.left-col{display:flex;flex-direction:column;gap:10px;animation:slideL .5s .2s ease both;opacity:0;animation-fill-mode:both}
+.right-col{display:flex;flex-direction:column;gap:10px;animation:slideR .5s .3s ease both;opacity:0;animation-fill-mode:both}
+
+/* OBJECTIVES */
+.obj-list{display:flex;flex-direction:column;gap:7px}
+.obj{display:flex;gap:9px;align-items:flex-start;padding:9px;border:1px solid var(--bdr);border-left:2px solid var(--g);border-radius:3px;background:rgba(61,255,143,.02);transition:all .2s;cursor:default}
+.obj:hover{background:rgba(61,255,143,.04);transform:translateX(2px)}
+.obj.warn{border-left-color:var(--a)}
+.obj-n{font-family:'Orbitron',sans-serif;font-size:8px;color:var(--g);opacity:.6;white-space:nowrap;padding-top:1px}
+.obj.warn .obj-n{color:var(--a);opacity:.8}
+.obj-t{font-family:'Orbitron',sans-serif;font-size:8px;color:var(--g);letter-spacing:.03em;margin-bottom:3px;line-height:1.3}
+.obj.warn .obj-t{color:var(--a)}
+.obj-d{font-size:8px;color:var(--mut);line-height:1.6}
+.obj-status{font-size:8px;margin-top:3px;color:var(--g);display:flex;align-items:center;gap:4px}
+.obj-status.warn{color:var(--a)}
+.obj-status::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* AI DECISION FEED */
+.ai-feed{max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;scrollbar-width:none}
+.ai-feed::-webkit-scrollbar{display:none}
+.ai-entry{font-size:8px;display:flex;gap:7px;padding:5px 7px;border:1px solid rgba(61,255,143,.08);border-radius:2px;background:rgba(61,255,143,.015);animation:fadeIn .3s ease}
+.ai-entry .ae-time{color:var(--mut);flex-shrink:0;letter-spacing:.05em}
+.ai-entry .ae-icon{flex-shrink:0;font-size:10px}
+.ai-entry .ae-txt{color:var(--txt);line-height:1.5}
+.ai-entry.deciding{border-color:rgba(204,136,255,.2);background:rgba(204,136,255,.02)}
+.ai-entry.deciding .ae-txt{color:var(--p)}
+.ai-entry.acting{border-color:rgba(61,255,143,.2)}.ai-entry.acting .ae-txt{color:var(--g)}
+.ai-entry.alert{border-color:rgba(255,184,77,.2)}.ai-entry.alert .ae-txt{color:var(--a)}
+.ai-entry.error{border-color:rgba(255,79,79,.2)}.ai-entry.error .ae-txt{color:var(--r)}
+
+/* COMMAND */
+.cmd-log{max-height:80px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;margin-bottom:9px;scrollbar-width:none}
+.cmd-log::-webkit-scrollbar{display:none}
+.cmd-entry{font-size:8px;display:flex;gap:6px;animation:fadeIn .3s ease}
+.cmd-time{color:var(--mut);flex-shrink:0}
+.cmd-txt{color:var(--txt)}.cmd-txt.ok{color:var(--g)}.cmd-txt.warn{color:var(--a)}.cmd-txt.err{color:var(--r)}
+.cmd-input-row{display:flex;gap:6px;align-items:center}
+.cmd-input-row input{flex:1;background:rgba(61,255,143,.03);border:1px solid var(--bdr);border-radius:3px;color:var(--g);font-family:'Space Mono',monospace;font-size:9px;padding:5px 8px;outline:none;transition:border-color .2s}
+.cmd-input-row input:focus{border-color:rgba(61,255,143,.5)}
+.cmd-input-row input::placeholder{color:var(--mut)}
+.cmd-send{padding:5px 9px;border:1px solid var(--bdr);border-radius:3px;background:rgba(61,255,143,.05);color:var(--g);font-size:8px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.cmd-send:hover{background:rgba(61,255,143,.12);border-color:var(--g)}
+.autocomplete{position:relative}
+.ac-list{position:absolute;bottom:100%;left:0;right:0;background:rgba(3,10,6,.98);border:1px solid var(--bdr2);border-radius:3px;overflow:hidden;z-index:60;margin-bottom:4px;display:none}
+.ac-list.open{display:block}
+.ac-item{font-size:8px;padding:5px 8px;cursor:pointer;color:var(--mut);letter-spacing:.1em;transition:all .15s}
+.ac-item:hover,.ac-item.selected{background:rgba(61,255,143,.08);color:var(--g)}
+
+/* SENSORS */
+.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.sensor{background:rgba(61,255,143,.02);border:1px solid var(--bdr);border-radius:3px;padding:9px;cursor:pointer;transition:all .2s}
+.sensor:hover{background:rgba(61,255,143,.05);border-color:rgba(61,255,143,.3)}
+.sensor.active{border-color:var(--g);background:rgba(61,255,143,.07)}
+.sensor.warn-state{border-color:rgba(255,184,77,.4);background:rgba(255,184,77,.03)}
+.s-lbl{font-size:8px;letter-spacing:.18em;color:var(--mut);text-transform:uppercase;margin-bottom:4px}
+.s-val{font-family:'Orbitron',sans-serif;font-size:17px;font-weight:700;color:var(--g);line-height:1}
+.s-val.warn{color:var(--a)}
+.s-unit{font-size:9px;color:var(--mut)}
+.s-bar{height:2px;background:rgba(61,255,143,.1);border-radius:2px;margin-top:7px;overflow:hidden}
+.s-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--gd),var(--g));transition:width 1.5s ease}
+.s-fill.warn{background:linear-gradient(90deg,#7a4400,var(--a))}
+.s-sparkline{margin-top:5px}
+
+/* ROBOT STATUS */
+.robot-status{border:1px solid var(--bdr);border-radius:3px;padding:9px;font-size:9px;line-height:2}
+.rs-row{display:flex;justify-content:space-between;align-items:center}
+.rs-k{color:var(--mut);letter-spacing:.12em;text-transform:uppercase;font-size:8px}
+.rs-v{color:var(--g);font-size:8px}
+.rs-v.warn{color:var(--a)}.rs-v.err{color:var(--r)}
+.rs-badge{font-size:7px;padding:1px 5px;border-radius:2px;border:1px solid currentColor;margin-left:4px}
+
+/* BOTTOM */
+.bottom-panels{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;animation:fadeUp .5s .4s ease both;opacity:0;animation-fill-mode:both}
+.mini-panel{background:var(--pan);border:1px solid var(--bdr);border-radius:6px;padding:11px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .2s}
+.mini-panel:hover{border-color:rgba(61,255,143,.3);background:rgba(61,255,143,.03)}
+.mini-icon{font-size:20px;flex-shrink:0}
+.mini-label{font-size:8px;letter-spacing:.18em;color:var(--mut);text-transform:uppercase;margin-bottom:3px}
+.mini-val{font-family:'Orbitron',sans-serif;font-size:14px;color:var(--g);font-weight:700}
+.mini-trend{font-size:8px;color:var(--mut);margin-top:2px}
+.mini-trend.up{color:var(--g)}.mini-trend.down{color:var(--r)}
+
+/* FOOTER */
+footer{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:9px 0 15px;border-top:1px solid var(--bdr);font-size:8px;color:var(--mut);letter-spacing:.1em;animation:fadeUp .6s .5s ease both;flex-wrap:wrap;gap:8px}
+.footer-pills{display:flex;gap:6px;flex-wrap:wrap}
+.fp{padding:3px 9px;border:1px solid var(--bdr);border-radius:20px;background:var(--pan);transition:all .2s;cursor:pointer;font-size:8px}
+.fp:hover{background:rgba(61,255,143,.05)}
+.fp.g{color:var(--g);border-color:rgba(61,255,143,.35)}
+.fp.a{color:var(--a);border-color:rgba(255,184,77,.35)}
+.fp.b{color:var(--b);border-color:rgba(90,180,255,.35)}
+.fp.r{color:var(--r);border-color:rgba(255,79,79,.35)}
+.kbd{font-size:7px;opacity:.5;letter-spacing:.15em}
+
+/* SVG / ANIMATIONS */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideR{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes walkCycle{0%{transform:translateY(0)}50%{transform:translateY(-1.5px)}100%{transform:translateY(0)}}
+@keyframes armSwing{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
+@keyframes legSwingF{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
+@keyframes legSwingB{0%,100%{transform:rotate(14deg)}50%{transform:rotate(-14deg)}}
+@keyframes glowPulse{0%,100%{opacity:.7}50%{opacity:1}}
+@keyframes panelSun{0%,100%{transform:rotate(-18deg)}50%{transform:rotate(-14deg)}}
+@keyframes robotPatrol{0%{transform:translateX(0)}50%{transform:translateX(16px)}100%{transform:translateX(0)}}
+@keyframes dustDrift{0%{transform:translateX(0)}100%{transform:translateX(35px) translateY(-6px)}}
+@keyframes visorPulse{0%,100%{fill:#3dff8f}50%{fill:#88ffcc}}
+@keyframes alertRing{0%,100%{stroke:rgba(255,184,77,.8);stroke-width:1.5}50%{stroke:rgba(255,184,77,.2);stroke-width:3}}
+@keyframes scanLine{0%{transform:translateY(-100%)}100%{transform:translateY(180px)}}
+@keyframes pulse{0%{r:6;opacity:.8}100%{r:22;opacity:0}}
+@keyframes aiThink{0%,100%{opacity:.3}50%{opacity:1}}
+
+.robot-walk{animation:walkCycle .6s ease-in-out infinite}
+.robot-patrol{animation:robotPatrol 4s ease-in-out infinite}
+.arm-l{transform-origin:50% 0%;animation:armSwing .6s ease-in-out infinite}
+.arm-r{transform-origin:50% 0%;animation:armSwing .6s .3s ease-in-out infinite}
+.leg-l{transform-origin:50% 0%;animation:legSwingF .6s ease-in-out infinite}
+.leg-r{transform-origin:50% 0%;animation:legSwingB .6s ease-in-out infinite}
+.visor-glow{animation:visorPulse 1.8s ease-in-out infinite}
+.solar-track{transform-origin:50% 100%;animation:panelSun 8s ease-in-out infinite}
+.glow-ring{animation:glowPulse 2s ease-in-out infinite}
+.dust-drift{animation:dustDrift 12s linear infinite}
+.hover-ring{opacity:0;transition:opacity .2s;pointer-events:none}
+.alert-ring-anim{animation:alertRing 1s ease-in-out infinite}
+.scan-line{animation:scanLine 2.5s linear infinite}
+.ai-think{animation:aiThink 1.2s ease-in-out infinite}
+g.clickable{cursor:pointer}
+g.clickable:hover .hover-ring{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- ALERT BANNER -->
+<div id="alert-banner">
+  <span class="al-icon">⚠</span>
+  <span id="alert-text">PLANT-02 NUTRIENT DEFICIENCY — AI AGENT DISPATCHING ROBOT-1 TO SECTOR B</span>
+  <span class="al-dismiss" onclick="dismissAlert()">DISMISS ✕</span>
+</div>
+
+<!-- TOAST STACK -->
+<div id="toast-stack"></div>
+
+<!-- DETAIL POPUP -->
+<div id="detail-popup">
+  <div class="dp-title">
+    <span id="dp-title-text">Details</span>
+    <span class="dp-close" onclick="closePopup()">✕</span>
+  </div>
+  <div id="dp-content"></div>
+</div>
+
+<!-- ALERT HISTORY DRAWER -->
+<div id="alert-drawer">
+  <h2>Alert History <span class="drawer-close" onclick="toggleDrawer()">✕</span></h2>
+  <div id="drawer-list"></div>
+</div>
+
+<!-- KEYBOARD SHORTCUTS -->
+<div id="shortcut-overlay" onclick="if(event.target===this)closeShortcuts()">
+  <div class="shortcut-box">
+    <h2>Keyboard Shortcuts</h2>
+    <div class="sc-row"><span class="sc-k">Dismiss alert</span><span class="sc-v">Esc</span></div>
+    <div class="sc-row"><span class="sc-k">Focus command</span><span class="sc-v">C</span></div>
+    <div class="sc-row"><span class="sc-k">Alert history</span><span class="sc-v">A</span></div>
+    <div class="sc-row"><span class="sc-k">Full scan</span><span class="sc-v">S</span></div>
+    <div class="sc-row"><span class="sc-k">Dispatch robot</span><span class="sc-v">D</span></div>
+    <div class="sc-row"><span class="sc-k">Toggle shortcuts</span><span class="sc-v">?</span></div>
+    <div class="sc-row"><span class="sc-k">Close popup</span><span class="sc-v">X</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+<header>
+  <div class="logo">
+    <div class="logo-tag">START Hack 2026 · Syngenta Challenge · Mission Control</div>
+    <div class="logo-name">MARS<span>-01</span> // GREENHOUSE AI</div>
+  </div>
+  <div class="header-center">
+    <button class="hbtn" onclick="triggerScan()">⟳ Full Scan</button>
+    <button class="hbtn" onclick="toggleDrawer()">⚑ Alerts <span id="alert-count" style="color:var(--r)">1</span></button>
+    <button class="hbtn" onclick="dispatchRobot()">▶ Dispatch</button>
+    <button class="hbtn" onclick="toggleShortcuts()">? Keys</button>
+  </div>
+  <div class="header-right">
+    <div class="sol-info">
+      <div class="big">SOL 847</div>
+      <div class="sm" id="clock-display">14:32:08 LST</div>
+      <div class="sm" style="color:var(--a);margin-top:2px">DAY 182 / 450 · 4 CREW</div>
+    </div>
+    <div class="partner">Challenge by<strong>SYNGENTA GROUP</strong></div>
+  </div>
+</header>
+
+<main>
+
+<!-- LEFT COLUMN -->
+<div class="left-col">
+  <div class="panel">
+    <div class="panel-head"><span>Mission Brief — 450-Day Surface Stay</span><div class="dot amber" id="obj-dot"></div></div>
+    <div class="panel-body">
+      <div style="font-size:8px;color:var(--mut);line-height:1.7;margin-bottom:10px;padding:8px;border:1px solid var(--bdr);border-radius:3px;background:rgba(61,255,143,.02)">
+        Supplement diet of <span style="color:var(--g)">4 astronauts</span> for a <span style="color:var(--a)">450-day Mars surface mission</span>. AI agent must maximize nutrient output, ensure dietary balance, and minimize resource use.
+      </div>
+      <div class="obj-list">
+        <div class="obj warn"><div class="obj-n">A</div><div><div class="obj-t">Current Problem</div><div class="obj-d">NASA 2030s Mars mission — 9 months transit. Autonomous food production is critical.</div><div class="obj-status warn" id="obj3-s">⚠ STRESS DETECTED — PLANT-02</div></div></div>
+        <div class="obj"><div class="obj-n">B</div><div><div class="obj-t">Final Product</div><div class="obj-d">Working simulation / digital twin of Martian greenhouse with AI agent in action.</div><div class="obj-status" id="obj1-s">● SIMULATION RUNNING</div></div></div>
+        <div class="obj"><div class="obj-n">C</div><div><div class="obj-t">Users</div><div class="obj-d">NASA planners · Syngenta scientists designing autonomous cropping systems for Earth.</div><div class="obj-status" id="obj2-s">● 2 USER GROUPS ACTIVE</div></div></div>
+        <div class="obj"><div class="obj-n">D</div><div><div class="obj-t">Success Criteria</div><div class="obj-d">Max nutrient output · Dietary balance · Min resource consumption · Resilience.</div><div class="obj-status" id="obj4-s">● YIELD +2.1% THIS SOL</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span>Knowledge Base — MCP Data Sources</span><div class="dot" style="background:var(--b);box-shadow:0 0 6px var(--b)"></div></div>
+    <div class="panel-body" style="padding:10px">
+      <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
+        <div style="font-size:8px;padding:6px 8px;border:1px solid rgba(90,180,255,.2);border-left:2px solid var(--b);border-radius:2px;background:rgba(90,180,255,.03)">
+          <div style="color:var(--b);letter-spacing:.12em;margin-bottom:2px">1 · MARS ENVIRONMENTAL DATA</div>
+          <div style="color:var(--mut)">Gravity 3.72 m/s² · Sol 24h 39m · Sunlight 590 W/m² (43% Earth) · Atmo 0.6 kPa, 95% CO₂ · Temp −63°C avg (−125 to +20°C range)</div>
+        </div>
+        <div style="font-size:8px;padding:6px 8px;border:1px solid rgba(90,180,255,.2);border-left:2px solid var(--b);border-radius:2px;background:rgba(90,180,255,.03)">
+          <div style="color:var(--b);letter-spacing:.12em;margin-bottom:2px">2 · CROP DATA (NASA/ESA verified)</div>
+          <div style="color:var(--mut)">Lettuce: 6 kg/m²/yr · 28-day cycle · Cucumber: 8–15% yield boost at 600 µmol · Tomato: 22g/plant/day · ⚠ Space crops: −30% Ca, −25% Mg vs Earth</div>
+        </div>
+        <div style="font-size:8px;padding:6px 8px;border:1px solid rgba(90,180,255,.2);border-left:2px solid var(--b);border-radius:2px;background:rgba(90,180,255,.03)">
+          <div style="color:var(--b);letter-spacing:.12em;margin-bottom:2px">3 · HUMAN NEEDS — 4 CREW</div>
+          <div style="color:var(--mut)">2,100 kcal/person/day · 70g protein · 1,000mg Ca/day · 8L water/person/day · Greenhouse covers ~35% diet · 2.7 kg food/person/day total</div>
+        </div>
+      </div>
+      <div class="ai-feed" id="ai-feed">
+        <div class="ai-entry deciding"><span class="ae-time">14:30:01</span><span class="ae-icon">🧠</span><span class="ae-txt">Booting decision model v3.2...</span></div>
+        <div class="ai-entry acting"><span class="ae-time">14:30:44</span><span class="ae-icon">✓</span><span class="ae-txt">Robot-1 patrol route optimized</span></div>
+        <div class="ai-entry alert"><span class="ae-time">14:31:12</span><span class="ae-icon">⚠</span><span class="ae-txt">Plant-02 N₂ below threshold (48ppm)</span></div>
+        <div class="ai-entry deciding"><span class="ae-time">14:31:13</span><span class="ae-icon">🧠</span><span class="ae-txt">Evaluating: drip vs robot injection</span></div>
+        <div class="ai-entry acting"><span class="ae-time">14:31:14</span><span class="ae-icon">✓</span><span class="ae-txt">Dispatching Robot-1 → Sector B</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span>Command Console</span><div class="dot"></div></div>
+    <div class="panel-body">
+      <div class="cmd-log" id="cmd-log">
+        <div class="cmd-entry"><span class="cmd-time">14:30:01</span><span class="cmd-txt ok">▶ SYSTEM ONLINE</span></div>
+        <div class="cmd-entry"><span class="cmd-time">14:31:12</span><span class="cmd-txt warn">▶ ANOMALY: PLANT-02 N₂ 48ppm</span></div>
+        <div class="cmd-entry"><span class="cmd-time">14:31:14</span><span class="cmd-txt ok">▶ ROBOT-1 DISPATCHED → SECTOR B</span></div>
+      </div>
+      <div class="autocomplete">
+        <div class="ac-list" id="ac-list"></div>
+        <div class="cmd-input-row">
+          <input id="cmd-input" type="text" placeholder="command... (? for help)" onkeydown="handleCmdKey(event)" oninput="showAutocomplete(this.value)"/>
+          <button class="cmd-send" onclick="sendCmd()">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CENTER VIEWPORT -->
+<div class="viewport" id="viewport">
+  <div class="vp-label">CAM-01 · LIVE FEED · DOME INTERIOR</div>
+  <div id="weather-strip">
+    <span id="wx-temp">−63°C</span> EXT &nbsp;|&nbsp; WIND <span id="wx-wind">12 m/s</span> &nbsp;|&nbsp; VIS <span id="wx-vis">4.2 km</span>
+  </div>
+  <div class="vp-corner tl"></div>
+  <div class="vp-corner br"></div>
+  <div class="click-hint">Click objects to inspect &nbsp;·&nbsp; press ? for shortcuts</div>
+
+  <div class="scene">
+  <svg id="scene-svg" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#02060a"/><stop offset="55%" stop-color="#0a1a08"/><stop offset="100%" stop-color="#1a3510"/>
+      </linearGradient>
+      <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#5a1a08"/><stop offset="100%" stop-color="#2a0a04"/>
+      </linearGradient>
+      <radialGradient id="domeGlow" cx="50%" cy="100%" r="60%"><stop offset="0%" stop-color="rgba(61,255,143,.08)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+      <radialGradient id="lightBeam" cx="50%" cy="0%" r="100%"><stop offset="0%" stop-color="rgba(136,255,200,.18)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+      <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="rgba(255,180,80,.9)"/><stop offset="60%" stop-color="rgba(255,140,40,.4)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+      <filter id="glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="softglow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <clipPath id="sceneClip"><rect width="900" height="600"/></clipPath>
+      <clipPath id="domeClip"><path d="M-125,155 Q-125,22 0,3 Q125,22 125,155 Z"/></clipPath>
+    </defs>
+    <g clip-path="url(#sceneClip)">
+
+    <rect width="900" height="600" fill="url(#skyGrad)"/>
+
+    <!-- Stars -->
+    <g opacity=".7">
+      <circle cx="80" cy="35" r=".9" fill="#aaffcc"/><circle cx="160" cy="18" r=".7" fill="#aaffcc"/>
+      <circle cx="250" cy="55" r="1.0" fill="#ccffdd"/><circle cx="340" cy="12" r=".8" fill="#aaffcc"/>
+      <circle cx="460" cy="30" r=".6" fill="#aaffcc"/><circle cx="590" cy="18" r=".9" fill="#ccffdd"/>
+      <circle cx="700" cy="45" r=".7" fill="#aaffcc"/><circle cx="820" cy="22" r="1.0" fill="#aaffcc"/>
+      <circle cx="45" cy="80" r=".7" fill="#aaffcc"/><circle cx="510" cy="8" r=".8" fill="#aaffcc"/>
+      <circle cx="730" cy="12" r=".6" fill="#aaffcc"/><circle cx="860" cy="55" r=".8" fill="#ccffdd"/>
+    </g>
+
+    <!-- Sun + Phobos -->
+    <circle cx="790" cy="68" r="22" fill="url(#sunGlow)" opacity=".65"/>
+    <circle cx="790" cy="68" r="9" fill="#ffcc66" opacity=".95"/>
+    <circle cx="645" cy="38" r="3" fill="#aa8866" opacity=".6"/>
+
+    <!-- Mars horizon glow -->
+    <ellipse cx="450" cy="440" rx="600" ry="80" fill="rgba(180,60,20,.14)"/>
+
+    <!-- Ground -->
+    <rect x="-10" y="420" width="930" height="220" fill="url(#groundGrad)"/>
+    <g stroke="rgba(120,50,20,.28)" stroke-width=".6" fill="none">
+      <path d="M0,440 Q220,428 450,438 Q680,448 900,434"/>
+      <path d="M0,462 Q280,452 560,460 Q730,465 900,456"/>
+    </g>
+
+    <!-- Dust -->
+    <g class="dust-drift"><ellipse cx="100" cy="412" rx="32" ry="6" fill="rgba(180,80,30,.14)"/></g>
+    <g class="dust-drift" style="animation-delay:-6s"><ellipse cx="630" cy="422" rx="22" ry="4" fill="rgba(180,80,30,.09)"/></g>
+
+    <!-- SOLAR PANELS -->
+    <g id="solar-group" class="clickable" onclick="showPopup('solar',event)">
+      <g transform="translate(42,235)">
+        <rect x="12"  y="80" width="5" height="180" fill="#3a4a55"/>
+        <rect x="62"  y="85" width="5" height="175" fill="#3a4a55"/>
+        <rect x="112" y="82" width="5" height="178" fill="#3a4a55"/>
+        <rect x="162" y="85" width="5" height="175" fill="#3a4a55"/>
+        <rect x="5"   y="256" width="20" height="4" rx="1" fill="#2a3a2a"/>
+        <rect x="55"  y="256" width="20" height="4" rx="1" fill="#2a3a2a"/>
+        <rect x="105" y="256" width="20" height="4" rx="1" fill="#2a3a2a"/>
+        <rect x="155" y="256" width="20" height="4" rx="1" fill="#2a3a2a"/>
+        <g class="solar-track">
+          <rect x="-2" y="45" width="52" height="36" rx="1" fill="#2a3a4a" stroke="#4a6a7a" stroke-width=".8"/>
+          <rect x="1" y="48" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="1" y="64" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="18" y="48" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="18" y="64" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="35" y="48" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="35" y="64" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <line x1="1" y1="55" x2="16" y2="55" stroke="#1144cc" stroke-width=".5" opacity=".6"/>
+          <line x1="18" y1="55" x2="33" y2="55" stroke="#1144cc" stroke-width=".5" opacity=".6"/>
+          <line x1="35" y1="55" x2="50" y2="55" stroke="#1144cc" stroke-width=".5" opacity=".6"/>
+          <rect x="2" y="49" width="48" height="5" rx="1" fill="rgba(120,200,255,.1)"/>
+        </g>
+        <g class="solar-track" style="animation-delay:-2s">
+          <rect x="50" y="50" width="52" height="36" rx="1" fill="#2a3a4a" stroke="#4a6a7a" stroke-width=".8"/>
+          <rect x="53" y="53" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="53" y="69" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="70" y="53" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="70" y="69" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="87" y="53" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="87" y="69" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="54" y="54" width="48" height="5" rx="1" fill="rgba(120,200,255,.1)"/>
+        </g>
+        <g class="solar-track" style="animation-delay:-4s">
+          <rect x="100" y="47" width="52" height="36" rx="1" fill="#2a3a4a" stroke="#4a6a7a" stroke-width=".8"/>
+          <rect x="103" y="50" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="103" y="66" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="120" y="50" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="120" y="66" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="137" y="50" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="137" y="66" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="104" y="51" width="48" height="5" rx="1" fill="rgba(120,200,255,.1)"/>
+        </g>
+        <g class="solar-track" style="animation-delay:-6s">
+          <rect x="150" y="50" width="52" height="36" rx="1" fill="#2a3a4a" stroke="#4a6a7a" stroke-width=".8"/>
+          <rect x="153" y="53" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="153" y="69" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="170" y="53" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="170" y="69" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="187" y="53" width="15" height="14" rx=".5" fill="#0a1628"/><rect x="187" y="69" width="15" height="14" rx=".5" fill="#0d1e3d"/>
+          <rect x="154" y="54" width="48" height="5" rx="1" fill="rgba(120,200,255,.1)"/>
+        </g>
+        <rect x="0" y="258" width="210" height="3" rx="1" fill="#223322" opacity=".8"/>
+        <text x="100" y="272" font-family="'Space Mono'" font-size="8" fill="rgba(90,170,255,.5)" letter-spacing="1" text-anchor="middle">SOLAR ARRAY · 4.2 kW</text>
+      </g>
+      <rect class="hover-ring" x="40" y="268" width="210" height="36" rx="3" fill="none" stroke="rgba(61,255,143,.5)" stroke-width="1" stroke-dasharray="5,3"/>
+    </g>
+
+    <!-- WATER RECYCLER -->
+    <g id="tank-group" class="clickable" onclick="showPopup('tank',event)">
+      <g transform="translate(730,210)">
+        <rect x="12" y="55" width="80" height="155" rx="5" fill="#2a4a3a" stroke="#3a6a4a" stroke-width=".9"/>
+        <rect x="12" y="55" width="14" height="155" rx="4" fill="rgba(0,0,0,.18)"/>
+        <rect x="78" y="55" width="14" height="155" rx="4" fill="rgba(255,255,255,.04)"/>
+        <ellipse cx="52" cy="55" rx="40" ry="13" fill="#335543" stroke="#3a6a4a" stroke-width=".9"/>
+        <ellipse cx="52" cy="210" rx="42" ry="11" fill="#223a2a" stroke="#3a5a3a" stroke-width=".6"/>
+        <rect x="20" y="210" width="8" height="18" rx="2" fill="#2a3a2a"/>
+        <rect x="76" y="210" width="8" height="18" rx="2" fill="#2a3a2a"/>
+        <line x1="12" y1="88"  x2="92" y2="88"  stroke="#3a5a55" stroke-width="2" opacity=".8"/>
+        <line x1="12" y1="120" x2="92" y2="120" stroke="#3a5a55" stroke-width="2" opacity=".8"/>
+        <line x1="12" y1="152" x2="92" y2="152" stroke="#3a5a55" stroke-width="2" opacity=".8"/>
+        <line x1="12" y1="184" x2="92" y2="184" stroke="#3a5a55" stroke-width="2" opacity=".8"/>
+        <rect x="80" y="90" width="10" height="105" rx="3" fill="rgba(90,170,255,.06)" stroke="rgba(90,170,255,.25)" stroke-width=".6"/>
+        <rect x="81" y="148" width="8" height="46" rx="2" fill="rgba(90,170,255,.35)"/>
+        <rect x="-20" y="118" width="34" height="10" rx="2" fill="#334433"/>
+        <circle cx="-4" cy="123" r="9" fill="none" stroke="#446644" stroke-width="1.5"/>
+        <line x1="-4" y1="114" x2="-4" y2="132" stroke="#446644" stroke-width="1.3"/>
+        <line x1="-13" y1="123" x2="5" y2="123" stroke="#446644" stroke-width="1.3"/>
+        <rect x="-88" y="120" width="70" height="7" rx="2" fill="#2a3a33"/>
+        <line x1="-80" y1="119" x2="-80" y2="128" stroke="#3a5a55" stroke-width="2"/>
+        <line x1="-66" y1="119" x2="-66" y2="128" stroke="#3a5a55" stroke-width="2"/>
+        <line x1="-52" y1="119" x2="-52" y2="128" stroke="#3a5a55" stroke-width="2"/>
+        <line x1="-38" y1="119" x2="-38" y2="128" stroke="#3a5a55" stroke-width="2"/>
+        <circle cx="52" cy="70" r="5" fill="#3dff8f" filter="url(#glow)" class="glow-ring"/>
+        <text x="52" y="238" font-family="'Space Mono'" font-size="8" fill="rgba(61,255,143,.5)" letter-spacing=".5" text-anchor="middle">WATER · 340L</text>
+      </g>
+      <rect class="hover-ring" x="728" y="208" width="120" height="250" rx="3" fill="none" stroke="rgba(61,255,143,.5)" stroke-width="1" stroke-dasharray="5,3"/>
+    </g>
+
+    <!-- ROCKS -->
+    <g fill="#6a2e18">
+      <polygon points="636,400 655,376 678,393 670,408 632,408" opacity=".9"/>
+      <polygon points="85,394 104,375 122,390 116,403 82,403" opacity=".85"/>
+      <polygon points="820,395 840,376 858,390 851,404 817,404" opacity=".8"/>
+      <polygon points="28,408 44,396 58,406 52,418 26,418" opacity=".7"/>
+    </g>
+
+    <!-- GREENHOUSE DOME — apex at y=80, floor at y=415 -->
+    <g transform="translate(450,88)">
+
+      <!-- Ground halo -->
+      <ellipse cx="0" cy="327" rx="200" ry="42" fill="url(#domeGlow)" opacity=".9"/>
+
+      <!-- Foundation ring -->
+      <rect x="-168" y="312" width="336" height="24" rx="6" fill="#2a3d2a" stroke="rgba(61,255,143,.25)" stroke-width="1"/>
+      <rect x="-158" y="314" width="46" height="18" rx="2" fill="#1a2d1a"/><rect x="-106" y="314" width="46" height="18" rx="2" fill="#1a2d1a"/>
+      <rect x="-54" y="314" width="46" height="18" rx="2" fill="#1a2d1a"/><rect x="0" y="314" width="46" height="18" rx="2" fill="#1a2d1a"/>
+      <rect x="54" y="314" width="46" height="18" rx="2" fill="#1a2d1a"/><rect x="106" y="314" width="46" height="18" rx="2" fill="#1a2d1a"/>
+
+      <!-- Glass dome -->
+      <path d="M-165,327 Q-165,28 0,0 Q165,28 165,327 Z" fill="rgba(100,255,160,.055)" stroke="rgba(61,255,143,.42)" stroke-width="1.2"/>
+      <path d="M-155,327 Q-155,40 0,12 Q155,40 155,327 Z" fill="rgba(61,255,143,.018)"/>
+
+      <!-- Geodesic ribs -->
+      <g stroke="rgba(61,255,143,.2)" stroke-width=".7" fill="none">
+        <path d="M0,327 Q-65,200 -98,0"/><path d="M0,327 Q-120,220 -72,8"/>
+        <path d="M0,327 Q-152,240 -26,12"/><path d="M0,327 Q-160,260 26,12"/>
+        <path d="M0,327 Q152,240 72,8"/><path d="M0,327 Q120,220 98,0"/>
+        <path d="M0,327 Q65,200 104,2"/>
+      </g>
+      <!-- Latitude rings -->
+      <g stroke="rgba(61,255,143,.2)" stroke-width=".9" fill="none">
+        <path d="M-128,245 Q0,222 128,245"/>
+        <path d="M-152,285 Q0,268 152,285"/>
+        <path d="M-90,182 Q0,158 90,182"/>
+        <path d="M-46,118 Q0,98 46,118"/>
+        <path d="M-14,58 Q0,42 14,58"/>
+      </g>
+      <ellipse cx="0" cy="328" rx="165" ry="10" fill="rgba(61,255,143,.04)" stroke="rgba(61,255,143,.22)" stroke-width=".7"/>
+
+      <!-- FLOOR -->
+      <ellipse cx="0" cy="322" rx="162" ry="16" fill="#1a2e1a" stroke="rgba(61,255,143,.18)" stroke-width=".7"/>
+
+      <!-- HYDROPONIC GROW RACKS — 3 shelves clearly visible -->
+      <g transform="translate(-90,180)">
+        <!-- Rack frames -->
+        <rect x="0" y="0"   width="180" height="7" rx="2" fill="#2a3a2a" stroke="rgba(61,255,143,.15)" stroke-width=".5"/>
+        <rect x="0" y="48"  width="180" height="7" rx="2" fill="#2a3a2a" stroke="rgba(61,255,143,.15)" stroke-width=".5"/>
+        <rect x="0" y="96"  width="180" height="7" rx="2" fill="#2a3a2a" stroke="rgba(61,255,143,.15)" stroke-width=".5"/>
+        <rect x="0" y="140" width="180" height="7" rx="2" fill="#2a3a2a" stroke="rgba(61,255,143,.15)" stroke-width=".5"/>
+        <!-- Vertical supports -->
+        <rect x="0"   y="0" width="5" height="147" rx="1" fill="#223322"/>
+        <rect x="87"  y="0" width="5" height="147" rx="1" fill="#223322"/>
+        <rect x="175" y="0" width="5" height="147" rx="1" fill="#223322"/>
+        <!-- LED grow lights on each shelf -->
+        <rect x="2" y="2"  width="176" height="3" rx="1" fill="rgba(255,100,80,.35)"/>
+        <rect x="2" y="50" width="176" height="3" rx="1" fill="rgba(80,80,255,.35)"/>
+        <rect x="2" y="98" width="176" height="3" rx="1" fill="rgba(255,100,80,.3)"/>
+        <!-- SHELF 1: Lettuce (round, bushy) -->
+        <g transform="translate(12,7)"><rect x="-2" y="0" width="4" height="18" rx="1" fill="#2d4820"/><ellipse cx="0" cy="-5" rx="14" ry="9" fill="#2db84a" opacity=".9"/><ellipse cx="-8" cy="2" rx="8" ry="5" fill="#44d460" opacity=".75"/><ellipse cx="8" cy="1" rx="7" ry="4.5" fill="#44d460" opacity=".7"/></g>
+        <g transform="translate(44,7)"><rect x="-2" y="0" width="4" height="16" rx="1" fill="#2d4820"/><ellipse cx="0" cy="-4" rx="13" ry="8" fill="#29aa44" opacity=".9"/><ellipse cx="-7" cy="1" rx="7" ry="4" fill="#44d460" opacity=".75"/></g>
+        <g transform="translate(76,7)"><rect x="-2" y="0" width="4" height="20" rx="1" fill="#2d4820"/><ellipse cx="0" cy="-6" rx="15" ry="9.5" fill="#2db84a" opacity=".88"/><ellipse cx="9" cy="2" rx="8" ry="4.5" fill="#44d460" opacity=".7"/></g>
+        <g transform="translate(108,7)">
+          <rect x="-2" y="0" width="4" height="18" rx="1" fill="#2d4820"/>
+          <ellipse cx="0" cy="-4" rx="12" ry="7.5" fill="#22cc44" opacity=".9"/>
+          <ellipse cx="-7" cy="1" rx="6" ry="3.5" fill="#44d460" opacity=".8"/>
+          <!-- STRESS marker -->
+          <circle cx="6" cy="-8" r="4.5" fill="#ffb84d" opacity=".92" filter="url(#glow)" class="glow-ring"/>
+          <circle cx="6" cy="-8" r="9" fill="none" stroke="rgba(255,184,77,.55)" stroke-width="1.2" class="alert-ring-anim"/>
+        </g>
+        <g transform="translate(140,7)"><rect x="-2" y="0" width="4" height="18" rx="1" fill="#2d4820"/><ellipse cx="0" cy="-4" rx="13" ry="8.5" fill="#2db84a" opacity=".9"/><ellipse cx="-8" cy="2" rx="8" ry="5" fill="#44d460" opacity=".72"/></g>
+        <!-- SHELF 2: Tomatoes (tall, red fruits) -->
+        <g transform="translate(18,55)">
+          <line x1="0" y1="0" x2="-3" y2="-28" stroke="#2d5e20" stroke-width="1.5" fill="none"/>
+          <ellipse cx="-3" cy="-30" rx="10" ry="6" fill="#22aa44" opacity=".9"/>
+          <circle cx="5" cy="-20" r="4.5" fill="#cc3322" opacity=".85"/><circle cx="-7" cy="-24" r="3.5" fill="#ee4433" opacity=".78"/><circle cx="2" cy="-28" r="3" fill="#dd3322" opacity=".8"/>
+        </g>
+        <g transform="translate(55,55)">
+          <line x1="0" y1="0" x2="3" y2="-30" stroke="#2d5e20" stroke-width="1.5" fill="none"/>
+          <ellipse cx="3" cy="-32" rx="11" ry="6.5" fill="#29bb44" opacity=".9"/>
+          <circle cx="-4" cy="-20" r="4.5" fill="#cc3322" opacity=".85"/><circle cx="9" cy="-26" r="3.5" fill="#ee4433" opacity=".78"/>
+        </g>
+        <g transform="translate(92,55)">
+          <line x1="0" y1="0" x2="-2" y2="-26" stroke="#2d5e20" stroke-width="1.5" fill="none"/>
+          <ellipse cx="-2" cy="-28" rx="10" ry="6" fill="#22aa44" opacity=".9"/>
+          <circle cx="6" cy="-18" r="4" fill="#dd3322" opacity=".82"/><circle cx="-5" cy="-22" r="3" fill="#ee4433" opacity=".7"/>
+        </g>
+        <g transform="translate(128,55)">
+          <line x1="0" y1="0" x2="3" y2="-28" stroke="#2d5e20" stroke-width="1.5" fill="none"/>
+          <ellipse cx="3" cy="-30" rx="11" ry="7" fill="#29bb44" opacity=".88"/>
+          <circle cx="-3" cy="-19" r="4.5" fill="#cc3322" opacity=".82"/>
+        </g>
+        <!-- SHELF 3: Cucumber (vine leaves + fruits) -->
+        <g transform="translate(15,103)">
+          <line x1="0" y1="0" x2="-4" y2="-22" stroke="#2d5e20" stroke-width="1.8" fill="none"/>
+          <line x1="-4" y1="-22" x2="8" y2="-33" stroke="#2d5e20" stroke-width="1.2" fill="none"/>
+          <ellipse cx="8" cy="-35" rx="12" ry="6" fill="#22cc44" opacity=".9"/>
+          <rect x="14" y="-29" width="5" height="15" rx="2.5" fill="#3a9922" opacity=".85"/>
+        </g>
+        <g transform="translate(62,103)">
+          <line x1="0" y1="0" x2="3" y2="-25" stroke="#2d5e20" stroke-width="1.8" fill="none"/>
+          <line x1="3" y1="-25" x2="-8" y2="-35" stroke="#2d5e20" stroke-width="1.2" fill="none"/>
+          <ellipse cx="-8" cy="-37" rx="11" ry="5.5" fill="#29bb44" opacity=".92"/>
+          <rect x="-3" y="-30" width="5" height="14" rx="2.5" fill="#3a9922" opacity=".82"/>
+        </g>
+        <g transform="translate(110,103)">
+          <line x1="0" y1="0" x2="-2" y2="-23" stroke="#2d5e20" stroke-width="1.8" fill="none"/>
+          <ellipse cx="-2" cy="-25" rx="13" ry="7" fill="#22cc44" opacity=".9"/>
+          <ellipse cx="8" cy="-33" rx="8" ry="4" fill="#44dd66" opacity=".72"/>
+          <rect x="15" y="-27" width="5" height="15" rx="2.5" fill="#3a9922" opacity=".82"/>
+        </g>
+        <!-- Rack shelf labels -->
+        <text x="-8" y="-6" font-family="'Space Mono'" font-size="7" fill="rgba(61,255,143,.45)" letter-spacing=".5">LETTUCE</text>
+        <text x="-8" y="44" font-family="'Space Mono'" font-size="7" fill="rgba(204,100,100,.55)" letter-spacing=".5">TOMATO</text>
+        <text x="-8" y="92" font-family="'Space Mono'" font-size="7" fill="rgba(61,255,143,.45)" letter-spacing=".5">CUCUMBER</text>
+      </g>
+
+      <!-- Rack label banner -->
+      <text x="0" y="176" font-family="'Space Mono'" font-size="8.5" fill="rgba(61,255,143,.45)" letter-spacing="1" text-anchor="middle">HYDROPONIC RACKS · 3 CROP TYPES</text>
+
+      <!-- GROW LIGHTS overhead -->
+      <rect x="-3" y="8" width="6" height="170" fill="#445544" opacity=".6"/>
+      <rect x="-85" y="10" width="170" height="7" rx="3" fill="#334433" stroke="rgba(61,255,143,.2)" stroke-width=".5"/>
+      <g class="glow-ring">
+        <circle cx="-62" cy="13" r="4.5" fill="#ff8840" opacity=".85" filter="url(#glow)"/>
+        <circle cx="-32" cy="13" r="4" fill="#4488ff" opacity=".8" filter="url(#glow)"/>
+        <circle cx="0"   cy="13" r="6" fill="#88ffcc" opacity=".95" filter="url(#softglow)"/>
+        <circle cx="32"  cy="13" r="4" fill="#4488ff" opacity=".8" filter="url(#glow)"/>
+        <circle cx="62"  cy="13" r="4.5" fill="#ff8840" opacity=".85" filter="url(#glow)"/>
+      </g>
+      <path d="M-85,16 L-140,220 L140,220 L85,16 Z" fill="url(#lightBeam)" opacity=".4"/>
+      <!-- AI thinking dot -->
+      <circle cx="0" cy="13" r="10" fill="rgba(204,136,255,.0)" class="ai-think"/>
+      <circle cx="0" cy="13" r="5" fill="rgba(204,136,255,.35)" class="ai-think" style="animation-delay:.4s"/>
+      <circle cx="0" cy="13" r="2.5" fill="#cc88ff"/>
+
+      <!-- CREW QUARTERS (right inside dome) -->
+      <g transform="translate(70,190)" id="crew-qt" class="clickable" onclick="showPopup('crew',event)" style="cursor:pointer">
+        <rect x="0" y="0" width="88" height="120" rx="5" fill="#1e2e1e" stroke="rgba(61,255,143,.22)" stroke-width=".7"/>
+        <!-- Sign -->
+        <text x="44" y="-6" font-family="'Space Mono'" font-size="8" fill="rgba(61,255,143,.5)" text-anchor="middle" letter-spacing=".5">CREW QTR</text>
+        <!-- Windows row 1 -->
+        <rect x="6"  y="8"  width="34" height="26" rx="2" fill="#0a1a2a" stroke="rgba(90,180,255,.35)" stroke-width=".7"/>
+        <rect x="48" y="8"  width="34" height="26" rx="2" fill="#0a1a2a" stroke="rgba(90,180,255,.35)" stroke-width=".7"/>
+        <rect x="7"  y="9"  width="32" height="24" rx="1" fill="rgba(90,180,255,.1)"/>
+        <rect x="49" y="9"  width="32" height="24" rx="1" fill="rgba(90,180,255,.1)"/>
+        <!-- Astronaut silhouettes -->
+        <ellipse cx="16" cy="16" rx="5" ry="6" fill="rgba(200,220,255,.3)"/>
+        <ellipse cx="62" cy="16" rx="5" ry="6" fill="rgba(200,220,255,.25)"/>
+        <rect x="11" cy="21" width="10" height="8" rx="1" fill="rgba(180,200,255,.15)"/>
+        <!-- Bunks -->
+        <rect x="6"  y="42" width="76" height="5" rx="1" fill="rgba(61,255,143,.1)"/>
+        <rect x="6"  y="52" width="76" height="5" rx="1" fill="rgba(61,255,143,.08)"/>
+        <rect x="6"  y="62" width="76" height="5" rx="1" fill="rgba(61,255,143,.06)"/>
+        <rect x="6"  y="72" width="76" height="5" rx="1" fill="rgba(61,255,143,.08)"/>
+        <!-- Door -->
+        <rect x="34" y="85" width="20" height="32" rx="2" fill="#162616" stroke="rgba(61,255,143,.18)" stroke-width=".6"/>
+        <circle cx="52" cy="101" r="2.5" fill="#3dff8f" opacity=".65"/>
+        <!-- Astronaut count badge -->
+        <rect x="6" y="40" width="36" height="12" rx="2" fill="rgba(0,0,0,.4)"/>
+        <text x="24" y="49" font-family="'Space Mono'" font-size="7" fill="rgba(61,255,143,.7)" text-anchor="middle">4 CREW</text>
+        <circle class="hover-ring" cx="44" cy="60" r="52" fill="none" stroke="rgba(61,255,143,.4)" stroke-width="1" stroke-dasharray="4,3"/>
+      </g>
+
+      <!-- SENSOR TOWER (left inside) -->
+      <g transform="translate(-140,210)">
+        <rect x="0" y="0" width="10" height="90" rx="2" fill="#334433"/>
+        <rect x="-10" y="12" width="30" height="14" rx="2" fill="#223322" stroke="rgba(61,255,143,.2)" stroke-width=".5"/>
+        <rect x="-10" y="32" width="30" height="14" rx="2" fill="#223322" stroke="rgba(61,255,143,.2)" stroke-width=".5"/>
+        <rect x="-10" y="52" width="30" height="14" rx="2" fill="#223322" stroke="rgba(61,255,143,.2)" stroke-width=".5"/>
+        <rect x="-10" y="72" width="30" height="14" rx="2" fill="#223322" stroke="rgba(61,255,143,.2)" stroke-width=".5"/>
+        <circle cx="17" cy="19" r="3" fill="#3dff8f" opacity=".8" class="glow-ring"/>
+        <circle cx="17" cy="39" r="3" fill="#ffb84d" opacity=".8" class="glow-ring"/>
+        <circle cx="17" cy="59" r="3" fill="#3dff8f" opacity=".8" class="glow-ring"/>
+        <circle cx="17" cy="79" r="3" fill="#5ab4ff" opacity=".8" class="glow-ring"/>
+        <rect x="3" y="-20" width="4" height="22" rx="1" fill="#445544"/>
+        <circle cx="5" cy="-22" r="4" fill="#3dff8f" filter="url(#glow)" class="glow-ring"/>
+        <text x="5" y="112" font-family="'Space Mono'" font-size="7" fill="rgba(61,255,143,.4)" text-anchor="middle" letter-spacing=".5">SENSORS</text>
+      </g>
+
+      <!-- Scan line -->
+      <clipPath id="domeClip"><path d="M-162,327 Q-162,34 0,5 Q162,34 162,327 Z"/></clipPath>
+      <rect x="-162" y="-8" width="324" height="10" fill="rgba(61,255,143,.04)" clip-path="url(#domeClip)" class="scan-line"/>
+    </g>
+
+    <!-- AIRLOCK TUBE + HABITAT -->
+    <g transform="translate(617,358)">
+      <rect x="0" y="-24" width="120" height="48" rx="24" fill="#2a3a2a" stroke="rgba(61,255,143,.18)" stroke-width=".7"/>
+      <line x1="24" y1="-24" x2="24" y2="24" stroke="#3a5a3a" stroke-width="1.5" opacity=".65"/>
+      <line x1="48" y1="-24" x2="48" y2="24" stroke="#3a5a3a" stroke-width="1.5" opacity=".65"/>
+      <line x1="72" y1="-24" x2="72" y2="24" stroke="#3a5a3a" stroke-width="1.5" opacity=".65"/>
+      <line x1="96" y1="-24" x2="96" y2="24" stroke="#3a5a3a" stroke-width="1.5" opacity=".65"/>
+      <circle cx="120" cy="0" r="24" fill="#334433" stroke="rgba(61,255,143,.28)" stroke-width="1"/>
+      <circle cx="120" cy="0" r="14" fill="#223322"/>
+      <circle cx="120" cy="0" r="5.5" fill="#3dff8f" opacity=".45" filter="url(#glow)"/>
+      <rect x="142" y="-36" width="88" height="72" rx="6" fill="#2a3a2a" stroke="rgba(61,255,143,.18)" stroke-width=".7"/>
+      <rect x="150" y="-30" width="28" height="22" rx="2" fill="#1a2a1a"/>
+      <rect x="186" y="-30" width="28" height="22" rx="2" fill="#1a2a1a"/>
+      <rect x="150" y="-4"  width="66" height="36" rx="2" fill="#1a2a1a"/>
+      <rect x="151" y="-29" width="26" height="20" rx="1" fill="rgba(90,180,255,.11)" stroke="rgba(90,180,255,.25)" stroke-width=".5"/>
+      <rect x="187" y="-29" width="26" height="20" rx="1" fill="rgba(90,180,255,.11)" stroke="rgba(90,180,255,.25)" stroke-width=".5"/>
+      <ellipse cx="164" cy="-22" rx="5" ry="6" fill="rgba(200,220,255,.2)"/>
+      <rect x="170" y="-2" width="24" height="34" rx="2" fill="#162616" stroke="rgba(61,255,143,.15)" stroke-width=".5"/>
+      <circle cx="191" cy="15" r="2.5" fill="#3dff8f" opacity=".6"/>
+      <text x="186" y="48" font-family="'Space Mono'" font-size="7.5" fill="rgba(61,255,143,.4)" text-anchor="middle" letter-spacing=".5">HABITAT-A</text>
+    </g>
+
+    <!-- Corner HUD -->
+    <g stroke="rgba(61,255,143,.4)" stroke-width="1.2" fill="none">
+      <path d="M10,10 L10,26 M10,10 L26,10"/>
+      <path d="M890,10 L890,26 M890,10 L874,10"/>
+      <path d="M10,590 L10,574 M10,590 L26,590"/>
+      <path d="M890,590 L890,574 M890,590 L874,590"/>
+    </g>
+    <text x="34" y="24" font-family="'Space Mono'" font-size="9" fill="rgba(61,255,143,.5)" letter-spacing="1">18.4°N 77.5°E · ISIDIS PLANITIA</text>
+    <text x="588" y="24" font-family="'Space Mono'" font-size="9" fill="rgba(61,255,143,.5)" letter-spacing="1" id="svg-clock">SOL 847 · 14:32:08</text>
+    <text x="34" y="590" font-family="'Space Mono'" font-size="8.5" fill="rgba(61,255,143,.4)" letter-spacing="1">DAY 182/450 · CREW: 4 · GREENHOUSE AI v3.2</text>
+
+    </g>
+  </svg>
+  </svg>
+  </div>
+</div>
+
+<!-- RIGHT COLUMN -->
+<div class="right-col">
+  <div class="panel">
+    <div class="panel-head"><span>Sensors — CAM-01</span><div class="dot"></div></div>
+    <div class="panel-body">
+      <div class="sensor-grid">
+        <div class="sensor" onclick="highlightSensor(0)" id="sensor0">
+          <div class="s-lbl">Temperature</div>
+          <div class="s-val" id="sv0">22.4<span class="s-unit">°C</span></div>
+          <div class="s-bar"><div class="s-fill" id="sb0" style="width:72%"></div></div>
+          <canvas class="s-sparkline" id="sp0" height="24" style="width:100%;display:block;margin-top:5px"></canvas>
+        </div>
+        <div class="sensor" onclick="highlightSensor(1)" id="sensor1">
+          <div class="s-lbl">Humidity</div>
+          <div class="s-val" id="sv1">68<span class="s-unit">%</span></div>
+          <div class="s-bar"><div class="s-fill" id="sb1" style="width:68%"></div></div>
+          <canvas class="s-sparkline" id="sp1" height="24" style="width:100%;display:block;margin-top:5px"></canvas>
+        </div>
+        <div class="sensor warn-state" onclick="highlightSensor(2)" id="sensor2">
+          <div class="s-lbl">Nitrogen (P-02)</div>
+          <div class="s-val warn" id="sv2">48<span class="s-unit">ppm</span></div>
+          <div class="s-bar"><div class="s-fill warn" id="sb2" style="width:22%"></div></div>
+          <canvas class="s-sparkline" id="sp2" height="24" style="width:100%;display:block;margin-top:5px"></canvas>
+        </div>
+        <div class="sensor" onclick="highlightSensor(3)" id="sensor3">
+          <div class="s-lbl">CO₂</div>
+          <div class="s-val" id="sv3">412<span class="s-unit">ppm</span></div>
+          <div class="s-bar"><div class="s-fill" id="sb3" style="width:55%"></div></div>
+          <canvas class="s-sparkline" id="sp3" height="24" style="width:100%;display:block;margin-top:5px"></canvas>
+        </div>
+      </div>
+      <div class="robot-status">
+        <div class="rs-row"><span class="rs-k">Robot-1</span><span class="rs-v warn" id="rs1">SCANNING <span class="rs-badge">SECTOR B</span></span></div>
+        <div class="rs-row"><span class="rs-k">Robot-2</span><span class="rs-v" id="rs2">PATROLLING</span></div>
+        <div class="rs-row"><span class="rs-k">Solar</span><span class="rs-v" id="rso">4.2 kW · 87%</span></div>
+        <div class="rs-row"><span class="rs-k">Water</span><span class="rs-v" id="rwat">340L · 99.2% pure</span></div>
+        <div class="rs-row"><span class="rs-k">AI Task</span><span class="rs-v warn" id="rtask">NUTRIENT CHECK</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM -->
+<div class="bottom-panels">
+  <div class="mini-panel" onclick="showPopup('atmo',event)">
+    <div class="mini-icon">🌡️</div>
+    <div><div class="mini-label">Mars Ext. Conditions</div><div class="mini-val">−63°C <span style="font-size:10px;color:var(--mut)">0.6 kPa</span></div><div class="mini-trend">Gravity 3.72 m/s² · Sol 24.6h</div></div>
+  </div>
+  <div class="mini-panel" onclick="showPopup('crew',event)">
+    <div class="mini-icon">👩‍🚀</div>
+    <div><div class="mini-label">Crew Nutrition Status</div><div class="mini-val">4 <span style="font-size:10px;color:var(--mut)">astronauts</span></div><div class="mini-trend up" id="kcal-trend">↑ 8,420 kcal/day · Day 182/450</div></div>
+  </div>
+  <div class="mini-panel" onclick="showPopup('tank',event)">
+    <div class="mini-icon">💧</div>
+    <div><div class="mini-label">Water Reserve</div><div class="mini-val" id="mwater">340 <span style="font-size:10px;color:var(--mut)">L</span></div><div class="mini-trend">Target 8L/crew/day · recycled 22L</div></div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <div>START HACK 2026 · SYNGENTA CHALLENGE · ZÜRICH · 72H <span class="kbd">— press ? for shortcuts</span></div>
+  <div class="footer-pills">
+    <span class="fp g">AI Agent Active</span>
+    <span class="fp a" onclick="triggerAlert('PLANT-02 NUTRIENT DEFICIENCY — AI Agent dispatching Robot-1','warning')">⚠ Plant Stress</span>
+    <span class="fp b">MCP KB Connected</span>
+    <span class="fp r" onclick="triggerAlert('DUST STORM APPROACHING — Wind 48 m/s. Sealing airlock.','critical')">☁ Storm Risk</span>
+  </div>
+</footer>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// ROBOT ANIMATION (JS-driven, grounded)
+// ═══════════════════════════════════
+let robotT = 0;
+const FLOOR_Y = 415; // where feet touch the ground in scene coords
+
+function animRobots(dt) {
+  robotT += dt;
+
+  // ── Robot 1: circular patrol inside dome, on floor ──
+  const r1angle = robotT * 0.42;
+  const r1x = 450 + Math.sin(r1angle) * 60;
+  const r1groundY = 416;
+  const r1bodyTop = r1groundY - 75;
+
+  const r1body = document.getElementById('r1-body');
+  const r1shadow = document.getElementById('r1-shadow');
+  const r1hover = document.getElementById('r1-hover');
+  if (r1body) {
+    const facing = Math.cos(r1angle) > 0 ? 1 : -1;
+    r1body.setAttribute('transform', `translate(${r1x},${r1bodyTop}) scale(${facing},1)`);
+  }
+  if (r1shadow) { r1shadow.setAttribute('cx', r1x); r1shadow.setAttribute('cy', r1groundY + 3); }
+  if (r1hover) { r1hover.setAttribute('cx', r1x); r1hover.setAttribute('cy', r1groundY - 35); }
+
+  const legSwing1 = Math.sin(robotT * 4) * 14;
+  const legL1 = document.getElementById('r1-leg-l');
+  const legR1 = document.getElementById('r1-leg-r');
+  const armL1 = document.getElementById('r1-arm-l');
+  const armR1 = document.getElementById('r1-arm-r');
+  if (legL1) legL1.style.transform = `rotate(${legSwing1}deg)`;
+  if (legR1) legR1.style.transform = `rotate(${-legSwing1}deg)`;
+  if (armL1) armL1.style.transform = `rotate(${-legSwing1 * 0.6}deg)`;
+  if (armR1) armR1.style.transform = `rotate(${legSwing1 * 0.6}deg)`;
+
+  // ── Robot 2: exterior patrol, on ground ──
+  const r2x = 145 + Math.sin(robotT * 0.28 + 1.5) * 42;
+  const r2groundY = 415;
+  const r2bodyTop = r2groundY - 60;
+
+  const r2body = document.getElementById('r2-body');
+  const r2shadow = document.getElementById('r2-shadow');
+  const r2hover = document.getElementById('r2-hover');
+  if (r2body) {
+    const facing2 = Math.cos(robotT * 0.28 + 1.5) > 0 ? 1 : -1;
+    r2body.setAttribute('transform', `translate(${r2x},${r2bodyTop}) scale(${facing2},1)`);
+  }
+  if (r2shadow) { r2shadow.setAttribute('cx', r2x); r2shadow.setAttribute('cy', r2groundY + 2); }
+  if (r2hover) { r2hover.setAttribute('cx', r2x); r2hover.setAttribute('cy', r2groundY - 30); }
+
+  const legSwing2 = Math.sin(robotT * 3.5 + 1) * 12;
+  const legL2 = document.getElementById('r2-leg-l');
+  const legR2 = document.getElementById('r2-leg-r');
+  const armL2 = document.getElementById('r2-arm-l');
+  const armR2 = document.getElementById('r2-arm-r');
+  if (legL2) legL2.style.transform = `rotate(${legSwing2}deg)`;
+  if (legR2) legR2.style.transform = `rotate(${-legSwing2}deg)`;
+  if (armL2) armL2.style.transform = `rotate(${-legSwing2 * 0.5}deg)`;
+  if (armR2) armR2.style.transform = `rotate(${legSwing2 * 0.5}deg)`;
+}
+// rAF loop for robot animation
+let lastT = 0;
+function rafLoop(ts) {
+  const dt = Math.min((ts - lastT) / 1000, 0.05);
+  lastT = ts;
+  animRobots(dt);
+  requestAnimationFrame(rafLoop);
+}
+requestAnimationFrame(ts => { lastT = ts; requestAnimationFrame(rafLoop); });
+
+let sec=14*3600+32*60+8;
+setInterval(()=>{
+  sec++;const h=Math.floor(sec/3600)%24,m=Math.floor(sec/60)%60,s=sec%60;
+  const ts=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  document.getElementById('clock-display').textContent=ts+' LST';
+  document.getElementById('svg-clock').textContent='SOL 847 · '+ts;
+},1000);
+
+// ═══════════════════════════════════
+// SPARKLINES
+// ═══════════════════════════════════
+const spData={sp0:[22.1,22.2,22.5,22.3,22.4,22.6,22.4,22.3,22.4,22.5,22.4,22.4],sp1:[66,67,68,67,68,69,68,68,67,68,68,68],sp2:[120,110,95,82,70,60,55,50,48,48,47,48],sp3:[408,410,412,411,413,412,410,412,413,411,412,412]};
+const spColors={sp0:'#3dff8f',sp1:'#3dff8f',sp2:'#ffb84d',sp3:'#3dff8f'};
+
+function drawSparkline(id){
+  const canvas=document.getElementById(id);if(!canvas)return;
+  const w=canvas.offsetWidth||120,h=24;
+  canvas.width=w*devicePixelRatio;canvas.height=h*devicePixelRatio;
+  const ctx=canvas.getContext('2d');ctx.scale(devicePixelRatio,devicePixelRatio);
+  const d=spData[id],min=Math.min(...d),max=Math.max(...d),range=max-min||1;
+  const color=spColors[id]||'#3dff8f';
+  ctx.clearRect(0,0,w,h);
+  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.globalAlpha=.8;
+  d.forEach((v,i)=>{const x=(i/(d.length-1))*w,y=h-(((v-min)/range)*(h-4)+2);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  // Area fill
+  ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();
+  ctx.globalAlpha=.08;ctx.fillStyle=color;ctx.fill();
+  ctx.globalAlpha=1;
+  // Last point dot
+  const lv=d[d.length-1],lx=w,ly=h-(((lv-min)/range)*(h-4)+2);
+  ctx.beginPath();ctx.arc(lx-1,ly,2,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+}
+function drawAllSparklines(){Object.keys(spData).forEach(drawSparkline);}
+setTimeout(drawAllSparklines,200);
+
+// Update sparkline data on sensor tick
+function pushSparkline(id,val){
+  spData[id].push(val);if(spData[id].length>20)spData[id].shift();
+  drawSparkline(id);
+}
+
+// ═══════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════
+const alertHistory=[];
+let alertCount=1;
+alertHistory.push({time:'14:31:12',msg:'PLANT-02 NUTRIENT DEFICIENCY DETECTED',type:'critical'});
+alertHistory.push({time:'14:31:14',msg:'ROBOT-1 DISPATCHED TO SECTOR B',type:'ok'});
+renderDrawer();
+
+function triggerAlert(msg,type='warning'){
+  document.getElementById('alert-text').textContent=msg.toUpperCase();
+  document.getElementById('alert-banner').classList.add('show');
+  addLog(msg,'warn');
+  addAIEntry('⚠',msg.toLowerCase(),'alert');
+  const now=nowStr();
+  alertHistory.unshift({time:now,msg,type});
+  alertCount++;
+  document.getElementById('alert-count').textContent=alertCount;
+  renderDrawer();
+}
+function dismissAlert(){document.getElementById('alert-banner').classList.remove('show');}
+function renderDrawer(){
+  const list=document.getElementById('drawer-list');
+  list.innerHTML=alertHistory.map(a=>`<div class="alert-item ${a.type}"><div class="ai-time">${a.time}</div><div class="ai-msg">${a.msg}</div></div>`).join('');
+}
+function toggleDrawer(){document.getElementById('alert-drawer').classList.toggle('open');}
+
+// ═══════════════════════════════════
+// TOAST STACK
+// ═══════════════════════════════════
+function showToast(title,body,type=''){
+  const stack=document.getElementById('toast-stack');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<span class="t-close" onclick="this.closest('.toast').remove()">✕</span><div class="t-title">${title}</div><div class="t-body">${body}</div>`;
+  stack.appendChild(t);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),400);},5000);
+}
+
+// ═══════════════════════════════════
+// AI DECISION FEED
+// ═══════════════════════════════════
+function addAIEntry(icon,txt,type=''){
+  const feed=document.getElementById('ai-feed');
+  const el=document.createElement('div');el.className=`ai-entry ${type}`;
+  el.innerHTML=`<span class="ae-time">${nowStr()}</span><span class="ae-icon">${icon}</span><span class="ae-txt">${txt}</span>`;
+  feed.appendChild(el);feed.scrollTop=feed.scrollHeight;
+  if(feed.children.length>30)feed.removeChild(feed.children[0]);
+}
+
+// ═══════════════════════════════════
+// POPUP DATA
+// ═══════════════════════════════════
+const popupData={
+  robot1:{title:'ROBOT-01 // INTERIOR',rows:[['Unit','AI-R01 CARETAKER'],['Status','SCANNING'],['Battery','91%'],['Location','SECTOR B · DOME'],['Task','NUTRIENT CHECK'],['Uptime','6h 14m']],btns:[{l:'Reassign Task',fn:'reassignRobot1'},{l:'Emergency Stop',fn:'stopRobot',red:true}]},
+  robot2:{title:'ROBOT-02 // EXTERIOR',rows:[['Unit','AI-R02 RANGER'],['Status','PATROLLING'],['Battery','78%'],['Location','PERIMETER E'],['Task','BOUNDARY SCAN'],['Uptime','6h 14m']],btns:[{l:'Recall to Airlock',fn:'recallRobot2'},{l:'Emergency Stop',fn:'stopRobot',red:true}]},
+  plant1:{title:'PLANT-01 // LETTUCE (Outredgeous)',rows:[['Health','NOMINAL'],['Yield','6 kg/m²/yr · 28-day cycle'],['Nitrogen','142 ppm · optimal 100–150'],['Ca content','−30% vs Earth (space effect)'],['Vitamin C','8% RDA per 15g serving'],['Vitamin K','30% RDA per 15g serving'],['Last Scan','14:28:03']],btns:[{l:'Schedule Nutrient',fn:'scheduleNutrient'}]},
+  plant2:{title:'PLANT-02 // CUCUMBER — STRESS',rows:[['Health','⚠ DEFICIENT',true],['Yield','↓ −62% at current N₂',true],['Nitrogen','48 ppm · threshold 80 ppm',true],['PAR light','600 µmol (optimal range)'],['Biomass','+8–15% possible at 600 µmol'],['Growth','+0.4 mm/sol (target 3.2)',true],['Last Scan','14:31:12']],btns:[{l:'Dispatch Robot-1 Now',fn:'dispatchRobot'},{l:'Override: Apply Drip',fn:'applyNutrient'}]},
+  plant3:{title:'PLANT-03 // TOMATO (Red Robin)',rows:[['Health','NOMINAL'],['Yield','22g/plant/day · 60-day cycle'],['Nitrogen','138 ppm · OK'],['Ca deficit','−30% vs Earth — supplement req.'],['Water req.','−98% vs soil (hydroponics)'],['Growth','+3.1 mm/sol'],['Last Scan','14:29:44']],btns:[{l:'Schedule Analysis',fn:'scheduleGrowth'}]},
+  plant4:{title:'PLANT-04 // LETTUCE (Dragoon)',rows:[['Health','OPTIMAL'],['Yield','6.8 kg/m²/yr · fast cycle'],['Nitrogen','180 ppm · slightly high'],['Spread harvest','400% yield vs single cut'],['Vitamin K','30% RDA per serving'],['Growth','+4.2 mm/sol'],['Last Scan','14:30:18']],btns:[{l:'Export Growth Data',fn:'exportData'}]},
+  solar:{title:'SOLAR ARRAY // STATUS',rows:[['Panels','8/8 active'],['Mars Irradiance','590 W/m² (43% of Earth 1,361 W/m²)'],['Output','4.2 kW'],['Efficiency','87% (temp-adjusted)'],['Battery','94%'],['Est. runtime per sol','18.4 h']],btns:[{l:'Optimize Panel Angle',fn:'optimizeSolar'}]},
+  tank:{title:'WATER RECYCLER // HYDROPONICS',rows:[['Reserve','340 L / 500 L capacity'],['Crew Daily Need','32 L (8L × 4 crew)'],['Hydro Saving','−98% water vs soil (NASA)'],['Fertilizer Saving','−60% vs conventional'],['Recycled Today','22 L · purity 99.2%'],['Pressure','1.4 bar · pump ACTIVE']],btns:[{l:'Run Purification Cycle',fn:'purificationCycle'}]},
+  atmo:{title:'MARS ENVIRONMENT // ISIDIS PLANITIA',rows:[['Ext. Temp','−63°C avg · range −125 to +20°C'],['Pressure','0.6 kPa (0.6% of Earth 101.3 kPa)'],['Gravity','3.72 m/s² (38% of Earth 9.81 m/s²)'],['Sol Length','24h 39m 35s (vs Earth 24h)'],['Solar Irradiance','590 W/m² (43% of Earth)'],['Atmosphere','95% CO₂ · 2.6% N₂ · 1.9% Ar'],['Radiation','High — dome shielding req.']],btns:[]},
+  crew:{title:'CREW NUTRITION // 450-DAY MISSION',rows:[['Crew','4 astronauts · Day 182 / 450'],['Caloric Need','2,100 kcal/person/day = 8,400 total'],['Protein','70g/person/day'],['Calcium','1,000 mg/day ⚠ crops −30% Ca in space'],['Water','8L/person/day = 32L total'],['Total Food Mass','2.7 kg/person/day = 10.8 kg/day'],['GH Contribution','~35% diet supplement from crops']],btns:[{l:'View Full Dietary Report',fn:'exportData'}]},
+};
+
+let popupEl=document.getElementById('detail-popup');
+function showPopup(id,evt){
+  if(evt&&evt.stopPropagation)evt.stopPropagation();
+  const data=popupData[id];if(!data)return;
+  const vp=document.getElementById('viewport').getBoundingClientRect();
+  let px=120,py=60;
+  if(evt){
+    const ex=evt.clientX-vp.left,ey=evt.clientY-vp.top;
+    px=ex+18;py=ey-20;
+    if(px+250>vp.width)px=ex-260;
+    if(py+280>vp.height)py=ey-280;
+    px=Math.max(6,px);py=Math.max(6,py);
+  }
+  popupEl.style.left=px+'px';popupEl.style.top=py+'px';
+  document.getElementById('dp-title-text').textContent=data.title;
+  let html='';
+  (data.rows||[]).forEach(r=>html+=`<div class="dp-row"><span class="dp-k">${r[0]}</span><span class="dp-v${r[2]?' warn':''}">${r[1]}</span></div>`);
+  (data.btns||[]).forEach(b=>html+=`<button class="dp-btn${b.red?' red':''}" onclick="${b.fn}()">${b.l}</button>`);
+  document.getElementById('dp-content').innerHTML=html;
+  popupEl.classList.add('visible');
+}
+function closePopup(){popupEl.classList.remove('visible');}
+document.getElementById('scene-svg').addEventListener('click',e=>{if(!e.target.closest('.clickable'))closePopup();});
+
+// ═══════════════════════════════════
+// BUTTON ACTIONS
+// ═══════════════════════════════════
+function reassignRobot1(){closePopup();addLog('ROBOT-1 REASSIGNED → GROWTH SCAN','ok');addAIEntry('✓','Robot-1 reassigned to growth optimization route','acting');showToast('Robot-1 Reassigned','Now running full growth scan.','');}
+function stopRobot(){closePopup();addLog('EMERGENCY STOP → ALL ROBOTS HALTED','err');addAIEntry('✕','Emergency stop issued — all robots halted','error');showToast('Emergency Stop','All robots halted.','alert');document.getElementById('rs1').innerHTML='STOPPED';document.getElementById('rs2').innerHTML='STOPPED';}
+function recallRobot2(){closePopup();addLog('ROBOT-2 RECALLED → AIRLOCK','ok');addAIEntry('✓','Robot-2 returning to airlock — ETA 4 min','acting');showToast('Robot-2 Recalled','ETA 4 minutes.','');document.getElementById('rs2').textContent='RETURNING';}
+function dispatchRobot(){closePopup();addLog('ROBOT-1 → PLANT-02 NUTRIENT INJECTION','ok');addAIEntry('✓','Dispatching Robot-1 to Plant-02 — nutrient probe','acting');showToast('Dispatched','Robot-1 en route to Plant-02.','');}
+function applyNutrient(){closePopup();addLog('DRIP OVERRIDE → PLANT-02','ok');addAIEntry('✓','Drip irrigation override applied — Plant-02 Sector B','acting');showToast('Nutrient Applied','Drip irrigation active for Plant-02.','');}
+function scheduleNutrient(){closePopup();addLog('NUTRIENT DOSE SCHEDULED → 16:00 LST','ok');showToast('Scheduled','Nutrient dose queued for 16:00 LST.','');}
+function scheduleGrowth(){closePopup();addLog('GROWTH ANALYSIS QUEUED → PLANT-03','ok');showToast('Analysis Queued','Plant-03 next cycle.','');}
+function exportData(){closePopup();addLog('GROWTH LOG EXPORTED → EARTH RELAY','ok');showToast('Exported','Data transmitted to Earth relay.','');}
+function optimizeSolar(){closePopup();addLog('SOLAR OPTIMIZATION → RECALCULATING','ok');addAIEntry('🧠','Calculating optimal panel angle for current solar angle','deciding');setTimeout(()=>{addAIEntry('✓','Panel angle adjusted: −22° → +0.4 kW gain','acting');showToast('Solar Optimized','Output +0.4 kW. Panels at optimal angle.','');},1400);}
+function purificationCycle(){closePopup();addLog('PURIFICATION CYCLE → 12 MIN','ok');addAIEntry('✓','Water purification cycle initiated','acting');showToast('Purification Started','12 min cycle running.','');}
+
+// ═══════════════════════════════════
+// SENSOR CLICK
+// ═══════════════════════════════════
+const sensorTips=[
+  'Optimal 22–24°C for cucumber & lettuce. Currently nominal. Above 26°C degrades lettuce quality.',
+  'Target 65–80% RH. Too high risks fungal disease. Currently nominal at 68%.',
+  '⚠ Critical: 48 ppm. Threshold is 80 ppm minimum. Lettuce needs 100–150 ppm for optimal yield. Yield already −62%.',
+  'CO₂ at 412 ppm — Mars atmo is 95% CO₂ but exterior is toxic. Dome targets 800–1200 ppm for enrichment boost.',
+];
+const sensorNames=['Temperature','Humidity','Nitrogen (Plant-02)','CO₂ (Dome)'];
+function highlightSensor(i){
+  document.querySelectorAll('.sensor').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sensor'+i).classList.add('active');
+  showToast(sensorNames[i],sensorTips[i],i===2?'warn':'');
+}
+
+// ═══════════════════════════════════
+// COMMAND CONSOLE + AUTOCOMPLETE
+// ═══════════════════════════════════
+const allCmds=['status','scan','water','solar','dispatch','optimize','storm','purify','help','recall','export','nutrients'];
+let acIdx=-1;
+function showAutocomplete(val){
+  const list=document.getElementById('ac-list');
+  if(!val){list.classList.remove('open');return;}
+  const matches=allCmds.filter(c=>c.startsWith(val.toLowerCase()));
+  if(!matches.length){list.classList.remove('open');return;}
+  list.innerHTML=matches.map((c,i)=>`<div class="ac-item" onclick="selectAC('${c}')">${c}</div>`).join('');
+  list.classList.add('open');acIdx=-1;
+}
+function selectAC(cmd){
+  document.getElementById('cmd-input').value=cmd;
+  document.getElementById('ac-list').classList.remove('open');
+  sendCmd();
+}
+function handleCmdKey(e){
+  const list=document.getElementById('ac-list');
+  const items=list.querySelectorAll('.ac-item');
+  if(e.key==='Tab'&&items.length){e.preventDefault();acIdx=(acIdx+1)%items.length;items.forEach((el,i)=>el.classList.toggle('selected',i===acIdx));if(items[acIdx])document.getElementById('cmd-input').value=items[acIdx].textContent;}
+  else if(e.key==='Enter'){list.classList.remove('open');sendCmd();}
+  else if(e.key==='Escape'){list.classList.remove('open');closePopup();}
+}
+function addLog(txt,type=''){
+  const log=document.getElementById('cmd-log');
+  const el=document.createElement('div');el.className='cmd-entry';
+  el.innerHTML=`<span class="cmd-time">${nowStr()}</span><span class="cmd-txt ${type}">▶ ${txt}</span>`;
+  log.appendChild(el);log.scrollTop=log.scrollHeight;
+  if(log.children.length>40)log.removeChild(log.children[0]);
+}
+const cmds={
+  'status':()=>{addLog('ALL SYSTEMS: 2/2 ROBOTS · 4/4 OBJ · DOME NOMINAL','ok');addAIEntry('🧠','Status check complete — 1 anomaly active (Plant-02)','deciding');},
+  'scan':()=>{addLog('INITIATING FULL DOME SCAN…','ok');addAIEntry('🧠','Running multi-sensor sweep across all sectors','deciding');setTimeout(()=>{addLog('SCAN COMPLETE · ANOMALY: PLANT-02 N₂ 48ppm','warn');addAIEntry('⚠','Scan confirms Plant-02 nitrogen critically low','alert');showToast('Scan Complete','Anomaly: Plant-02 N₂ 48ppm','warn');},1400);},
+  'water':()=>{addLog('WATER: 340L · PURITY 99.2% · PUMP ACTIVE','ok');showToast('Water System','340L reserve · Purity 99.2%','');},
+  'solar':()=>{addLog('SOLAR: 4.2kW · EFF 87% · BATTERY 94%','ok');showToast('Solar Array','4.2 kW output · 8/8 panels','');},
+  'dispatch':()=>{addLog('DISPATCHING ROBOT-1 → PLANT-02 SECTOR B','ok');addAIEntry('✓','Robot-1 dispatch confirmed — ETA 0:48','acting');showToast('Robot-1 Dispatched','En route. ETA 48 seconds.','');},
+  'optimize':()=>{addLog('AI OPTIMIZATION RUNNING…','ok');addAIEntry('🧠','Running multi-variable growth optimizer','deciding');setTimeout(()=>{addLog('RECOMMENDATION: +8% LIGHT · −12ppm CO₂','ok');addAIEntry('✓','Optimization complete: yield +3.2% projected','acting');},1500);},
+  'storm':()=>triggerAlert('DUST STORM APPROACHING — Wind 48 m/s. Sealing airlock.','critical'),
+  'purify':()=>{addLog('PURIFICATION CYCLE STARTED → 12 MIN','ok');purificationCycle();},
+  'recall':()=>{addLog('ROBOT-2 RECALLED → AIRLOCK','ok');recallRobot2();},
+  'export':()=>{addLog('DATA EXPORT → EARTH RELAY','ok');exportData();},
+  'nutrients':()=>{addLog('NUTRIENT LEVELS: P01 142ppm OK · P02 48ppm LOW · P03 138ppm OK','warn');showToast('Nutrient Report','P02 critical — 48ppm. Others nominal.','warn');},
+  'help':()=>addLog('COMMANDS: status scan water solar dispatch optimize storm purify recall export nutrients','ok'),
+};
+function sendCmd(){
+  const inp=document.getElementById('cmd-input'),val=inp.value.trim().toLowerCase();
+  if(!val)return;
+  addLog('> '+val.toUpperCase());inp.value='';
+  document.getElementById('ac-list').classList.remove('open');
+  setTimeout(()=>{cmds[val]?cmds[val]():addLog('UNKNOWN. TYPE "help" FOR COMMANDS.','err');},280);
+}
+
+// ═══════════════════════════════════
+// SHORTCUTS
+// ═══════════════════════════════════
+function toggleShortcuts(){document.getElementById('shortcut-overlay').classList.toggle('open');}
+function closeShortcuts(){document.getElementById('shortcut-overlay').classList.remove('open');}
+document.addEventListener('keydown',e=>{
+  const tag=document.activeElement.tagName;
+  if(tag==='INPUT')return;
+  if(e.key==='?'){toggleShortcuts();}
+  else if(e.key==='Escape'){closePopup();dismissAlert();closeShortcuts();document.getElementById('alert-drawer').classList.remove('open');}
+  else if(e.key==='c'||e.key==='C'){document.getElementById('cmd-input').focus();}
+  else if(e.key==='a'||e.key==='A'){toggleDrawer();}
+  else if(e.key==='s'||e.key==='S'){cmds['scan']();}
+  else if(e.key==='d'||e.key==='D'){dispatchRobot();}
+  else if(e.key==='x'||e.key==='X'){closePopup();}
+});
+
+// ═══════════════════════════════════
+// SENSORS TICKER
+// ═══════════════════════════════════
+const sensors=[
+  {v:'sv0',b:'sb0',sp:'sp0',base:22.4,range:.4,dec:1,unit:'°C',p:72,warn:false},
+  {v:'sv1',b:'sb1',sp:'sp1',base:68,range:2.5,dec:0,unit:'%',p:68,warn:false},
+  {v:'sv2',b:'sb2',sp:'sp2',base:48,range:2,dec:0,unit:'ppm',p:22,warn:true},
+  {v:'sv3',b:'sb3',sp:'sp3',base:412,range:9,dec:0,unit:'ppm',p:55,warn:false},
+];
+setInterval(()=>{
+  sensors.forEach(s=>{
+    const v=(s.base+(Math.random()-.5)*2*s.range).toFixed(s.dec);
+    document.getElementById(s.v).innerHTML=`${v}<span class="s-unit">${s.unit}</span>`;
+    s.p=Math.max(5,Math.min(95,s.p+(Math.random()-.5)*3));
+    document.getElementById(s.b).style.width=s.p+'%';
+    pushSparkline(s.sp,parseFloat(v));
+  });
+  const solar=(4.0+Math.random()*.5).toFixed(1);
+  // msolar element may not exist if removed from DOM — guard it
+  const msolEl=document.getElementById('msolar');
+  if(msolEl) msolEl.innerHTML=solar+' <span style="font-size:10px;color:var(--mut)">kW</span>';
+  document.getElementById('rso').textContent=solar+' kW · '+Math.round(82+Math.random()*12)+'%';
+  document.getElementById('mwater').innerHTML=Math.round(338+Math.random()*4)+' <span style="font-size:10px;color:var(--mut)">L</span>';
+  // Weather
+  document.getElementById('wx-wind').textContent=Math.round(10+Math.random()*4)+' m/s';
+  document.getElementById('wx-vis').textContent=(3.8+Math.random()*.8).toFixed(1)+' km';
+},2400);
+
+// ═══════════════════════════════════
+// ROBOT STATUS TICKER
+// ═══════════════════════════════════
+const r1pool=['SCANNING <span class="rs-badge">SECTOR B</span>','PROBING PLANT-02','INJECTING NUTRIENT','LOGGING DATA','MOVING TO P-03'];
+const r2pool=['PATROLLING','BOUNDARY SCAN','SCOUTING','PERIMETER CHECK'];
+const taskPool=['NUTRIENT CHECK · B2','MOISTURE PROBE · A3','LEAF SCAN · C1','STRESS DETECT · B2','SOIL SAMPLE · B4'];
+setInterval(()=>{
+  document.getElementById('rs1').innerHTML=r1pool[Math.floor(Math.random()*r1pool.length)];
+  document.getElementById('rs2').textContent=r2pool[Math.floor(Math.random()*r2pool.length)];
+  document.getElementById('rtask').textContent=taskPool[Math.floor(Math.random()*taskPool.length)];
+  document.getElementById('rso').textContent=(4.0+Math.random()*.5).toFixed(1)+' kW · '+Math.round(82+Math.random()*12)+'%';
+},4200);
+
+// ═══════════════════════════════════
+// AI FEED AUTO-EVENTS
+// ═══════════════════════════════════
+function triggerScan(){cmds['scan']();}
+const aiEvents=[
+  ()=>addAIEntry('🧠','KB query: lettuce Ca deficit −30% in space — adjusting mineral supplement dose','deciding'),
+  ()=>{addAIEntry('✓','Spread harvesting scheduled for Plant-04 — 400% yield vs single-cut method','acting');showToast('Yield Optimized','Spread harvesting active on Plant-04. +400% vs single cut.','');},
+  ()=>addAIEntry('🧠','Checking crew caloric coverage: GH supplies ~35% of 8,400 kcal/day target','deciding'),
+  ()=>{addAIEntry('⚠','Ca supplementation alert: space crops −30% Ca. Recommend supplement dose.','alert');},
+  ()=>{addAIEntry('✓','PAR adjusted +8%: Mars sunlight 590 W/m² — compensating for 57% deficit','acting');},
+  ()=>addAIEntry('🧠','Hydroponic efficiency: −98% water vs soil. Recycler at 69% capacity of daily 32L need','deciding'),
+  ()=>{addAIEntry('✓','Dietary balance: protein 94% · Vit-C 88% · Ca 61% (low — supplement critical)','acting');showToast('Nutrition Alert','Ca only 61% of target. Space crop deficit confirmed.','warn');},
+];
+let aiEvIdx=0;
+setTimeout(()=>{setInterval(()=>{aiEvents[aiEvIdx%aiEvents.length]();aiEvIdx++;},9000);},5000);
+
+// Random alert events
+setTimeout(()=>triggerAlert('PLANT-02 NUTRIENT DEFICIENCY — AI AGENT DISPATCHING ROBOT-1 TO SECTOR B','critical'),1200);
+setTimeout(()=>showToast('Mission Control Online','450-day simulation active. 4 crew. MCP KB connected.','info'),2500);
+
+// ═══════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════
+function nowStr(){const d=new Date();const base=new Date();base.setHours(14,32,8,0);const elapsed=Math.floor((d-base)/1000);const t=14*3600+32*60+8+Math.max(0,elapsed);const h=Math.floor(t/3600)%24,m=Math.floor(t/60)%60,s=t%60;return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;}
+function dispatchRobot(){document.getElementById('cmd-input').value='dispatch';sendCmd();}
+</script>
+</body>
+</html>
