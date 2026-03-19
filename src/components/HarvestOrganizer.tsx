@@ -83,8 +83,8 @@ export default function HarvestOrganizer({
   }, [productionLog]);
 
   // Recent consumption (last 10 days)
-  const recentConsumption = useMemo(() =>
-    consumptionLog.slice(-15).reverse(),
+  const allConsumption = useMemo(() =>
+    [...consumptionLog].reverse(),
   [consumptionLog]);
 
   // Consumption self-sufficiency — what % of crew needs come from greenhouse vs pre-packed
@@ -304,14 +304,14 @@ export default function HarvestOrganizer({
 
           {viewTab === 'consumption' && (
             <motion.div key="consumption" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              {recentConsumption.length === 0 ? (
+              {allConsumption.length === 0 ? (
                 <div className="text-center py-12 text-white/30">
                   <div className="text-4xl mb-2">🍽️</div>
                   <p className="text-sm">No consumption data yet — simulation hasn't started</p>
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {recentConsumption.map((c, i) => {
+                  {allConsumption.map((c, i) => {
                     const ghPct = c.totalCalories > 0 ? Math.round(((c.totalCalories - c.fromPrePacked) / c.totalCalories) * 100) : 0;
                     const calPct = Math.round((c.totalCalories / crewTarget.dailyCalories) * 100);
                     return (

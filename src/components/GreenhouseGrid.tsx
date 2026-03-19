@@ -1,29 +1,35 @@
 import { useMemo, useState, useRef, useCallback, type WheelEvent, type MouseEvent, type PointerEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CropZone, SimEvent } from '../types';
-import { SEED_LIBRARY, GREENHOUSE_AREA } from '../data/crops';
+import { SEED_LIBRARY } from '../data/crops';
 
 interface Props {
   zones: CropZone[];
   activeEvents: SimEvent[];
   solHour: number;
+  greenhouseArea?: number;
 }
 
-// Greenhouse layout: 12 columns × 10 rows = 120 m² (1 cell = 1 m²)
-const COLS = 12;
-const ROWS = 10;
+// Greenhouse layout: dynamic grid based on area (1 cell = 1 m²)
 const CELL = 1;
+
+function getGridDimensions(area: number) {
+  // Aim for a roughly 1.2:1 aspect ratio (cols:rows)
+  const cols = Math.max(4, Math.round(Math.sqrt(area * 1.2)));
+  const rows = Math.max(3, Math.ceil(area / cols));
+  return { cols, rows, totalCells: cols * rows };
+}
 
 function getCrop(id: string) {
   return SEED_LIBRARY.find(c => c.id === id)!;
 }
 
-function buildGrid(zones: CropZone[]) {
-  const grid: (CropZone | null)[] = new Array(COLS * ROWS).fill(null);
+function buildGrid(zones: CropZone[], cols: number, rows: number) {
+  const grid: (CropZone | null)[] = new Array(cols * rows).fill(null);
   let cellIdx = 0;
   for (const zone of zones) {
     const cellCount = Math.round(zone.area / CELL);
-    for (let i = 0; i < cellCount && cellIdx < COLS * ROWS; i++, cellIdx++) {
+    for (let i = 0; i < cellCount && cellIdx < cols * rows; i++, cellIdx++) {
       grid[cellIdx] = zone;
     }
   }
@@ -55,6 +61,83 @@ function tilePoints(x: number, y: number) {
     `${x},${y + TILE_H / 2}`,
     `${x - TILE_W / 2},${y}`,
   ].join(' ');
+}
+
+// 24-hour sol arc — shows sun/moon position on a semicircular horizon
+function SolArc({ solHour }: { solHour: number }) {
+  const W = 56, H = 28;
+  const cx = W / 2, cy = H - 2;
+  const r = 22;
+
+  // Map solHour (0-24) to angle: 6h = left (π), 12h = top (π/2), 18h = right (0)
+  // Night: 18h→6h mapped to lower arc
+  const isDaytime = solHour >= 6 && solHour < 18;
+  const angle = isDaytime
+    ? Math.PI - ((solHour - 6) / 12) * Math.PI          // π → 0  (left to right arc above horizon)
+    : Math.PI + ((solHour >= 18 ? solHour - 18 : solHour + 6) / 12) * Math.PI; // 0 → -π (right to left below)
+  
+  const dotX = cx + r * Math.cos(angle);
+  const dotY = cy - r * Math.sin(angle);
+
+  // Dawn/dusk tick positions
+  const dawn = { x: cx - r, y: cy };
+  const noon = { x: cx, y: cy - r };
+  const dusk = { x: cx + r, y: cy };
+
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="shrink-0">
+      {/* Horizon line */}
+      <line x1={cx - r - 3} y1={cy} x2={cx + r + 3} y2={cy} stroke="#334155" strokeWidth={0.8} />
+
+      {/* Day arc (upper half) — warm gradient */}
+      <path
+        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+        fill="none"
+        stroke={isDaytime ? '#f59e0b' : '#44403c'}
+        strokeWidth={1.5}
+        strokeOpacity={isDaytime ? 0.5 : 0.2}
+      />
+
+      {/* Night arc (lower half) */}
+      <path
+        d={`M ${cx + r} ${cy} A ${r} ${r} 0 0 1 ${cx - r} ${cy}`}
+        fill="none"
+        stroke={!isDaytime ? '#64748b' : '#1e293b'}
+        strokeWidth={1}
+        strokeOpacity={!isDaytime ? 0.4 : 0.15}
+        strokeDasharray="2 2"
+      />
+
+      {/* Tick marks: 6h, 12h, 18h */}
+      <line x1={dawn.x} y1={dawn.y - 2} x2={dawn.x} y2={dawn.y + 2} stroke="#64748b" strokeWidth={0.6} />
+      <line x1={noon.x} y1={noon.y} x2={noon.x} y2={noon.y + 2} stroke="#64748b" strokeWidth={0.6} />
+      <line x1={dusk.x} y1={dusk.y - 2} x2={dusk.x} y2={dusk.y + 2} stroke="#64748b" strokeWidth={0.6} />
+
+      {/* Hour labels */}
+      <text x={dawn.x} y={cy + 8} textAnchor="middle" fill="#475569" fontSize={4} fontFamily="monospace">06</text>
+      <text x={noon.x} y={noon.y - 2} textAnchor="middle" fill="#475569" fontSize={4} fontFamily="monospace">12</text>
+      <text x={dusk.x} y={cy + 8} textAnchor="middle" fill="#475569" fontSize={4} fontFamily="monospace">18</text>
+
+      {/* Current position dot */}
+      <circle cx={dotX} cy={dotY} r={3.5}
+        fill={isDaytime ? '#fbbf24' : '#94a3b8'}
+        stroke={isDaytime ? '#f59e0b' : '#64748b'}
+        strokeWidth={0.8}
+      />
+      {/* Glow */}
+      <circle cx={dotX} cy={dotY} r={6}
+        fill={isDaytime ? '#fbbf24' : '#94a3b8'}
+        opacity={0.15}
+      />
+      {/* Symbol inside dot */}
+      <text x={dotX} y={dotY + 1.5} textAnchor="middle" fontSize={4}
+        fill={isDaytime ? '#78350f' : '#1e293b'}
+        fontWeight="bold"
+      >
+        {isDaytime ? '☀' : '☽'}
+      </text>
+    </svg>
+  );
 }
 
 // Plant sprites
@@ -158,8 +241,9 @@ const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 3;
 const ROTATION_STEP = 45; // degrees per click
 
-export default function GreenhouseGrid({ zones, activeEvents, solHour }: Props) {
-  const grid = useMemo(() => buildGrid(zones), [zones]);
+export default function GreenhouseGrid({ zones, activeEvents, solHour, greenhouseArea = 120 }: Props) {
+  const { cols: COLS, rows: ROWS } = useMemo(() => getGridDimensions(greenhouseArea), [greenhouseArea]);
+  const grid = useMemo(() => buildGrid(zones, COLS, ROWS), [zones, COLS, ROWS]);
   const isDaytime = solHour >= 6 && solHour < 18;
   const hasStorm = activeEvents.some(e => e.type === 'dust_storm' && e.active);
 
@@ -205,10 +289,13 @@ export default function GreenhouseGrid({ zones, activeEvents, solHour }: Props) 
   const rotateRight = () => setRotation(prev => (prev + ROTATION_STEP) % 360);
   const resetView = () => { setZoom(DEFAULT_ZOOM); setPan({ x: 0, y: 0 }); setRotation(0); setSelectedZone(null); };
 
-  // Lighting
+  // Lighting — computed as darkness overlay opacity (0 = full brightness, 1 = pitch black)
   const sunProgress = isDaytime ? (solHour - 6) / 12 : 0;
-  const ambientLight = isDaytime ? 0.6 + 0.4 * Math.sin(sunProgress * Math.PI) : 0.15;
-  const finalAmbient = ambientLight * (hasStorm ? 0.4 : 1);
+  // Daytime: 0.85 at dawn/dusk → 1.0 at noon. Night: 0.5 (dim but clearly visible)
+  const ambientLight = isDaytime ? 0.85 + 0.15 * Math.sin(sunProgress * Math.PI) : 0.5;
+  const finalAmbient = ambientLight * (hasStorm ? 0.6 : 1);
+  // Invert to darkness and cap at 0.4 so it never gets too dark
+  const darknessOpacity = Math.max(0, Math.min(0.4, 1 - finalAmbient));
 
   // Zone stats
   const zoneStats = useMemo(() => {
@@ -248,37 +335,19 @@ export default function GreenhouseGrid({ zones, activeEvents, solHour }: Props) 
           <span className="text-base">{isDaytime ? '☀️' : '🌙'}</span>
           <h3 className="text-sm font-semibold text-mars-300">Space Allocation Grid</h3>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-mars-800 text-mars-400 font-mono">
-            {GREENHOUSE_AREA}m² · {COLS}×{ROWS}
+            {greenhouseArea}m² · {COLS}×{ROWS}
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {/* Day/night indicator */}
+          {/* 24h sol arc indicator */}
           <div className="flex items-center gap-1.5">
-            <div className="relative w-20 h-2 rounded-full bg-mars-800 overflow-hidden">
-              <div
-                className="absolute inset-0 rounded-full transition-all duration-500"
-                style={{
-                  background: isDaytime
-                    ? `linear-gradient(90deg, #1e1b4b, #f97316 ${sunProgress * 100}%, #1e1b4b)`
-                    : 'linear-gradient(90deg, #0f172a, #1e293b, #0f172a)',
-                }}
-              />
-              <motion.div
-                className="absolute top-0 w-2 h-2 rounded-full"
-                style={{
-                  background: isDaytime ? '#fbbf24' : '#94a3b8',
-                  boxShadow: isDaytime ? '0 0 6px #fbbf24' : '0 0 4px #94a3b8',
-                }}
-                animate={{ left: `${isDaytime ? sunProgress * 100 : ((solHour < 6 ? solHour + 6 : solHour - 18) / 12) * 100}%` }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
+            <SolArc solHour={solHour} />
             <span className="text-[10px] text-mars-500 font-mono tabular-nums">
               {String(Math.floor(solHour)).padStart(2, '0')}:{String(Math.round((solHour % 1) * 60)).padStart(2, '0')}
             </span>
           </div>
           <span className="text-[10px] text-mars-500">
-            {totalPlants} plants · {Math.round(totalUsed)}/{GREENHOUSE_AREA}m² used
+            {totalPlants} plants · {Math.round(totalUsed)}/{greenhouseArea}m² used
           </span>
         </div>
       </div>
@@ -323,13 +392,6 @@ export default function GreenhouseGrid({ zones, activeEvents, solHour }: Props) 
           style={{ transition: 'viewBox 0.1s' }}
         >
           <defs>
-            <filter id="ambientLight">
-              <feComponentTransfer>
-                <feFuncR type="linear" slope={finalAmbient} />
-                <feFuncG type="linear" slope={finalAmbient} />
-                <feFuncB type="linear" slope={finalAmbient * 1.1} />
-              </feComponentTransfer>
-            </filter>
             <filter id="tileShadow">
               <feDropShadow dx={1} dy={1} stdDeviation={0.5} floodColor="#000" floodOpacity={0.3} />
             </filter>
@@ -338,7 +400,7 @@ export default function GreenhouseGrid({ zones, activeEvents, solHour }: Props) 
             </filter>
           </defs>
 
-          <g filter="url(#ambientLight)">
+          <g>
             {/* Floor tiles */}
             {Array.from({ length: ROWS }, (_, row) =>
               Array.from({ length: COLS }, (_, col) => {
@@ -458,37 +520,25 @@ export default function GreenhouseGrid({ zones, activeEvents, solHour }: Props) 
           {/* Sun/moon rendered as fixed HTML overlay below */}
         </svg>
 
-        {/* Sun / Moon — fixed position, unaffected by pan/zoom/rotation */}
-        <div className="absolute top-0 left-0 right-0 h-16 pointer-events-none overflow-hidden">
-          {isDaytime ? (
-            <motion.div
-              className="absolute"
-              animate={{
-                left: `${sunProgress * 100}%`,
-                top: `${14 - Math.sin(sunProgress * Math.PI) * 12}px`,
-              }}
-              transition={{ duration: 1.5, ease: 'easeInOut' }}
-              style={{ transform: 'translateX(-50%)' }}
-            >
-              <div className="relative">
-                <div className="w-5 h-5 rounded-full bg-amber-400" style={{ boxShadow: '0 0 14px 4px rgba(251,191,36,0.5), 0 0 30px 8px rgba(251,191,36,0.15)' }} />
-                <div className="absolute inset-0 w-5 h-5 rounded-full bg-amber-300 animate-ping opacity-20" />
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              className="absolute"
-              animate={{
-                left: `${((solHour < 6 ? solHour + 6 : solHour - 18) / 12) * 100}%`,
-                top: '10px',
-              }}
-              transition={{ duration: 1.5, ease: 'easeInOut' }}
-              style={{ transform: 'translateX(-50%)' }}
-            >
-              <div className="w-4 h-4 rounded-full bg-slate-400" style={{ boxShadow: '0 0 8px 2px rgba(148,163,184,0.3)' }} />
-            </motion.div>
-          )}
-        </div>
+        {/* Darkness overlay — smoothly transitions between light levels */}
+        <div
+          className="absolute inset-0 pointer-events-none rounded-xl"
+          style={{
+            backgroundColor: isDaytime ? `rgba(10,10,30,${darknessOpacity})` : `rgba(5,5,20,${darknessOpacity})`,
+            transition: 'background-color 2s ease-in-out',
+          }}
+        />
+
+        {/* Sky tint overlay — subtle ambient color shift */}
+        <div
+          className="absolute top-0 left-0 right-0 h-12 pointer-events-none rounded-t-xl"
+          style={{
+            background: isDaytime
+              ? `linear-gradient(180deg, rgba(251,191,36,${0.03 + Math.sin(sunProgress * Math.PI) * 0.06}) 0%, transparent 100%)`
+              : 'linear-gradient(180deg, rgba(100,120,200,0.06) 0%, transparent 100%)',
+            transition: 'background 2s ease-in-out',
+          }}
+        />
 
         {/* Dust storm overlay */}
         {hasStorm && (

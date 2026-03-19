@@ -202,7 +202,7 @@ export default function App() {
           <div className="h-full grid grid-cols-12 gap-3">
             <div className="col-span-7 flex flex-col gap-3 min-h-0">
               <div className="flex-1 min-h-0">
-                <GreenhouseGrid zones={state.zones} activeEvents={state.activeEvents} solHour={state.solHour} />
+                <GreenhouseGrid zones={state.zones} activeEvents={state.activeEvents} solHour={state.solHour} greenhouseArea={state.greenhouseArea} />
               </div>
             </div>
             <div className="col-span-5 flex flex-col gap-3 min-h-0">
@@ -243,7 +243,7 @@ export default function App() {
               <GreenhouseView zones={state.zones} activeEvents={state.activeEvents} day={state.day} />
             </div>
             <div className="col-span-4 min-h-0">
-              <GreenhouseGrid zones={state.zones} activeEvents={state.activeEvents} solHour={state.solHour} />
+              <GreenhouseGrid zones={state.zones} activeEvents={state.activeEvents} solHour={state.solHour} greenhouseArea={state.greenhouseArea} />
             </div>
             <div className="col-span-4 min-h-0">
               <CameraFeed zones={state.zones} activeEvents={state.activeEvents} day={state.day} />
@@ -254,7 +254,10 @@ export default function App() {
         {/* Analytics — Charts + nutrition deep-dive */}
         {activeTab === 'analytics' && (
           <div className="h-full grid grid-cols-12 gap-3">
-            <div className="col-span-5 min-h-0">
+            <div className="col-span-9 min-h-0">
+              <HistoryCharts history={state.history} />
+            </div>
+            <div className="col-span-3 min-h-0">
               <NutritionPanel
                 dailyCalories={state.dailyCalories}
                 dailyProtein={state.dailyProtein}
@@ -263,9 +266,6 @@ export default function App() {
                 day={state.day}
                 crewTarget={state.crewNutrientTarget}
               />
-            </div>
-            <div className="col-span-7 min-h-0">
-              <HistoryCharts history={state.history} />
             </div>
           </div>
         )}

@@ -92,7 +92,6 @@ function optimizeCropLayout(
 
   // Greedy allocation: fill greenhouse area with top-scoring crops
   const allocations: Record<string, number> = {};
-  let remaining = greenhouseArea;
   const targetCalPerDay = crewTarget.dailyCalories;
   const remainingMissionDays = missionDays - initialFoodDays;
   
@@ -118,19 +117,17 @@ function optimizeCropLayout(
   // Sort selected by score descending for allocation priority
   selected.sort((a, b) => b.total - a.total);
 
-  // Allocate area: calorie-dense crops get more, micronutrient boosters get less
+  // Allocate area proportionally to the FULL greenhouse area
   const totalScore = selected.reduce((s, c) => s + c.total, 0);
   for (const s of selected) {
     const proportion = s.total / totalScore;
-    const area = Math.max(5, Math.round(remaining * proportion));
-    allocations[s.crop.id] = Math.min(area, remaining);
-    remaining -= allocations[s.crop.id];
-    if (remaining <= 0) break;
+    allocations[s.crop.id] = Math.max(5, Math.round(greenhouseArea * proportion));
   }
 
-  // Distribute any leftover to the top scorer
-  if (remaining > 0 && selected.length > 0) {
-    allocations[selected[0].crop.id] += remaining;
+  // Adjust so the total exactly equals the greenhouse area
+  let allocated = Object.values(allocations).reduce((s, v) => s + v, 0);
+  if (allocated !== greenhouseArea && selected.length > 0) {
+    allocations[selected[0].crop.id] += greenhouseArea - allocated;
   }
 
   // Build reasoning
@@ -291,7 +288,7 @@ export default function MissionSetup({ crew, crewTarget, onUpdateCrew, onLaunch 
                           max={900}
                           step={10}
                           value={missionDays}
-                          onChange={e => setMissionDays(Number(e.target.value))}
+                          onChange={e => { setMissionDays(Number(e.target.value)); setHasOptimized(false); }}
                           className="flex-1 accent-orange-500 h-2"
                         />
                         <input
@@ -299,7 +296,7 @@ export default function MissionSetup({ crew, crewTarget, onUpdateCrew, onLaunch 
                           min={90}
                           max={900}
                           value={missionDays}
-                          onChange={e => setMissionDays(Math.max(90, Math.min(900, Number(e.target.value))))}
+                          onChange={e => { setMissionDays(Math.max(90, Math.min(900, Number(e.target.value)))); setHasOptimized(false); }}
                           className="w-24 bg-mars-900/80 border border-mars-700 rounded-lg px-3 py-2 text-white text-center text-lg font-mono"
                         />
                       </div>
@@ -315,7 +312,7 @@ export default function MissionSetup({ crew, crewTarget, onUpdateCrew, onLaunch 
                           max={300}
                           step={5}
                           value={greenhouseArea}
-                          onChange={e => setGreenhouseArea(Number(e.target.value))}
+                          onChange={e => { setGreenhouseArea(Number(e.target.value)); setHasOptimized(false); }}
                           className="flex-1 accent-orange-500 h-2"
                         />
                         <input
@@ -323,7 +320,7 @@ export default function MissionSetup({ crew, crewTarget, onUpdateCrew, onLaunch 
                           min={40}
                           max={300}
                           value={greenhouseArea}
-                          onChange={e => setGreenhouseArea(Math.max(40, Math.min(300, Number(e.target.value))))}
+                          onChange={e => { setGreenhouseArea(Math.max(40, Math.min(300, Number(e.target.value)))); setHasOptimized(false); }}
                           className="w-24 bg-mars-900/80 border border-mars-700 rounded-lg px-3 py-2 text-white text-center text-lg font-mono"
                         />
                       </div>

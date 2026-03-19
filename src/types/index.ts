@@ -71,9 +71,11 @@ export interface SimulationState {
   day: number;
   solHour: number;
   running: boolean;
+  wasRunningBeforePause: boolean;
   speed: number;
   missionDays: number;  // configurable mission length
   initialFoodDays: number; // sols of pre-packed food supply
+  greenhouseArea: number;  // m² total greenhouse area
   
   // Environment
   insideTemp: number;

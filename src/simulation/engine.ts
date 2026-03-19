@@ -108,9 +108,11 @@ export function createInitialState(config?: MissionConfig): SimulationState {
     day: 1,
     solHour: 6,
     running: false,
+    wasRunningBeforePause: false,
     speed: 1,
     missionDays,
     initialFoodDays,
+    greenhouseArea: config?.greenhouseArea ?? 120,
     insideTemp: 21,
     insideHumidity: 58,
     outsideTemp: -63,
@@ -274,7 +276,8 @@ export function simulateDay(state: SimulationState): SimulationState {
           description: `${crop.name} in Zone ${z.id.replace('z', '')} is ready for harvest (${Math.round(expectedYield)} kg expected).`,
           reasoning: `Growth complete after ${crop.growthDays} days. Crop health: ${Math.round(z.health)}%. Estimated yield: ${Math.round(expectedYield)} kg (${Math.round(crop.caloriesPerKg * expectedYield)} kcal, ${Math.round(crop.proteinPerKg * expectedYield)}g protein).`,
         });
-        // Pause simulation for crew to act
+        // Pause simulation for crew to act — remember previous running state
+        next.wasRunningBeforePause = next.running;
         next.running = false;
       }
     }
@@ -355,8 +358,7 @@ export function simulateDay(state: SimulationState): SimulationState {
     totalProtein: crewProtNeed - protRemaining,
     fromPrePacked,
   });
-  // Keep consumption log trimmed
-  if (next.consumptionLog.length > 500) next.consumptionLog = next.consumptionLog.slice(-500);
+
 
   // Expire events
   next.activeEvents = next.activeEvents.map(e => ({
@@ -411,6 +413,8 @@ export function simulateDay(state: SimulationState): SimulationState {
       description: desc,
       reasoning: reason,
     });
+    // Pause simulation for crew to act — remember previous running state
+    next.wasRunningBeforePause = next.running;
     next.running = false;
   });
 
@@ -597,9 +601,9 @@ export function confirmAction(state: SimulationState, actionId: string): Simulat
   // Remove the confirmed action
   next.pendingActions = next.pendingActions.filter(a => a.id !== actionId);
 
-  // Resume simulation if no more pending actions
+  // Resume simulation only if it was running before the pause
   if (next.pendingActions.length === 0) {
-    next.running = true;
+    next.running = next.wasRunningBeforePause;
   }
 
   return next;
@@ -620,8 +624,9 @@ export function dismissAction(state: SimulationState, actionId: string): Simulat
 
   next.pendingActions = next.pendingActions.filter(a => a.id !== actionId);
 
+  // Resume simulation only if it was running before the pause
   if (next.pendingActions.length === 0) {
-    next.running = true;
+    next.running = next.wasRunningBeforePause;
   }
 
   return next;
