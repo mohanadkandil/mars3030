@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { CropZone } from '../types';
-import { CROPS } from '../data/crops';
+import { SEED_LIBRARY } from '../data/crops';
 
 interface Props {
   zones: CropZone[];
@@ -10,7 +10,7 @@ interface Props {
 }
 
 function getCrop(id: string) {
-  return CROPS.find(c => c.id === id)!;
+  return SEED_LIBRARY.find(c => c.id === id)!;
 }
 
 function healthColor(h: number) {
@@ -159,25 +159,48 @@ function PlantSprite({ cropId, x, y, progress, health, size }: {
   );
 }
 
-/* ── Zone layout ── */
-const ZONE_LAYOUT = [
-  { x: 28, y: 44, w: 190, h: 120, label: 'Zone A' },
-  { x: 236, y: 44, w: 210, h: 120, label: 'Zone B' },
-  { x: 464, y: 44, w: 190, h: 120, label: 'Zone C' },
-  { x: 28, y: 182, w: 300, h: 105, label: 'Zone D' },
-  { x: 346, y: 182, w: 308, h: 105, label: 'Zone E' },
-];
+/* ── Zone layout — dynamically generated for any number of zones ── */
+function generateZoneLayout(count: number) {
+  if (count <= 0) return [];
+  const PAD = 10;
+  const W = 682 - PAD * 2;
+  const TOP = 44;
+  const TOTAL_H = 305 - TOP - 18;
+
+  // For 1-5 zones use 2-row layout, 6+ use a grid
+  const cols = count <= 3 ? count : count <= 6 ? 3 : 4;
+  const rows = Math.ceil(count / cols);
+  const gapX = 8;
+  const gapY = 8;
+  const cellW = (W - gapX * (cols - 1)) / cols;
+  const cellH = (TOTAL_H - gapY * (rows - 1)) / rows;
+
+  return Array.from({ length: count }, (_, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    return {
+      x: PAD + col * (cellW + gapX),
+      y: TOP + row * (cellH + gapY),
+      w: cellW,
+      h: cellH,
+      label: `Zone ${String.fromCharCode(65 + i)}`,
+    };
+  });
+}
 
 export default function GreenhouseView({ zones, activeEvents, day }: Props) {
   const hasStorm = activeEvents.some(e => e.type === 'dust_storm');
   const hasDisease = activeEvents.some(e => e.type === 'crop_disease');
   const hasPowerOut = activeEvents.some(e => e.type === 'power_outage');
 
+  const zoneLayout = useMemo(() => generateZoneLayout(zones.length), [zones.length]);
+
   const plantGrids = useMemo(() => {
     return zones.map((zone, zi) => {
-      const rect = ZONE_LAYOUT[zi];
-      const cols = Math.floor(rect.w / 22);
-      const rows = Math.floor(rect.h / 28);
+      const rect = zoneLayout[zi];
+      if (!rect) return [];
+      const cols = Math.max(1, Math.floor(rect.w / 22));
+      const rows = Math.max(1, Math.floor(rect.h / 28));
       const plants: { px: number; py: number; key: string }[] = [];
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
@@ -263,7 +286,8 @@ export default function GreenhouseView({ zones, activeEvents, day }: Props) {
 
           {/* Growing Zones */}
           {zones.map((zone, i) => {
-            const rect = ZONE_LAYOUT[i];
+            const rect = zoneLayout[i];
+            if (!rect) return null;
             const crop = getCrop(zone.cropId);
             const hc = healthColor(zone.health);
             const ripeness = ripenessLabel(zone.growthProgress);

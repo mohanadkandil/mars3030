@@ -21,8 +21,24 @@ const ACTIVITY_COLORS: Record<ActivityLevel, string> = {
   high: 'bg-alert-500/15 text-alert-300 border-alert-500/30',
 };
 
-function AstronautCard({ astronaut, onUpdate, onRemove }: {
+const AVATAR_COLORS = [
+  'from-orange-500 to-red-600',
+  'from-blue-500 to-indigo-600',
+  'from-emerald-500 to-teal-600',
+  'from-purple-500 to-pink-600',
+  'from-amber-500 to-orange-600',
+  'from-cyan-500 to-blue-600',
+  'from-rose-500 to-red-600',
+  'from-lime-500 to-green-600',
+];
+
+function getInitials(name: string) {
+  return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+}
+
+function AstronautCard({ astronaut, index, onUpdate, onRemove }: {
   astronaut: Astronaut;
+  index: number;
   onUpdate: (a: Astronaut) => void;
   onRemove: () => void;
 }) {
@@ -32,59 +48,58 @@ function AstronautCard({ astronaut, onUpdate, onRemove }: {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      className="glass rounded-2xl p-5 border border-mars-800/50"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="glass rounded-2xl border border-mars-800/50 flex flex-col overflow-hidden"
     >
-      {/* Header row */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-2xl bg-mars-800/80 flex items-center justify-center text-3xl">
-            {astronaut.gender === 'female' ? '👩‍🚀' : '👨‍🚀'}
-          </div>
-          <div>
-            {editing ? (
-              <input
-                className="bg-mars-800 text-white text-lg font-semibold rounded-lg px-3 py-1 w-52 border border-mars-700 focus:border-rust-400 outline-none"
-                value={astronaut.name}
-                onChange={e => onUpdate({ ...astronaut, name: e.target.value })}
-              />
-            ) : (
-              <div className="text-lg font-bold text-white">{astronaut.name}</div>
-            )}
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${ACTIVITY_COLORS[astronaut.activityLevel]}`}>
-                {ACTIVITY_LABELS[astronaut.activityLevel]}
-              </span>
-            </div>
-          </div>
+      {/* Top: Large avatar + name + buttons */}
+      <div className="flex items-start gap-4 p-4 pb-3">
+        {/* Large avatar */}
+        <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${AVATAR_COLORS[index % AVATAR_COLORS.length]} flex items-center justify-center flex-shrink-0 shadow-lg`}>
+          <span className="text-4xl">{astronaut.gender === 'female' ? '👩‍🚀' : '👨‍🚀'}</span>
         </div>
-        <div className="flex gap-2">
+
+        <div className="flex-1 min-w-0">
+          {/* Name */}
+          {editing ? (
+            <input
+              className="bg-mars-800 text-white text-lg font-bold rounded-lg px-3 py-1.5 w-full border border-mars-700 focus:border-rust-400 outline-none mb-1"
+              value={astronaut.name}
+              onChange={e => onUpdate({ ...astronaut, name: e.target.value })}
+            />
+          ) : (
+            <div className="text-lg font-bold text-white truncate">{astronaut.name}</div>
+          )}
+
+          {/* Quick stats inline */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-mars-400 mt-1">
+            <span>{astronaut.gender === 'male' ? '♂' : '♀'} {astronaut.age}y</span>
+            <span>{astronaut.weightKg}kg</span>
+            <span>{astronaut.heightCm}cm</span>
+          </div>
+
+          {/* Activity badge */}
+          <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full border mt-1.5 ${ACTIVITY_COLORS[astronaut.activityLevel]}`}>
+            {ACTIVITY_LABELS[astronaut.activityLevel]}
+          </span>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-col gap-1.5 flex-shrink-0">
           <button
             onClick={() => setEditing(e => !e)}
-            className="text-sm px-4 py-2 rounded-lg bg-mars-800 text-mars-300 hover:text-white hover:bg-mars-700 transition font-medium"
+            className="text-xs px-3 py-1.5 rounded-lg bg-mars-800 text-mars-300 hover:text-white hover:bg-mars-700 transition font-medium"
           >
-            {editing ? '✓ Done' : '✎ Edit'}
+            {editing ? '✓' : '✎'}
           </button>
           <button
             onClick={onRemove}
-            className="text-sm px-3 py-2 rounded-lg bg-mars-800 text-alert-400 hover:text-alert-300 hover:bg-alert-500/10 transition"
+            className="text-xs px-3 py-1.5 rounded-lg bg-mars-800 text-alert-400 hover:text-alert-300 hover:bg-alert-500/10 transition"
           >
             ✕
           </button>
         </div>
-      </div>
-
-      {/* Stats row — always visible */}
-      <div className="flex items-center gap-4 mb-4 text-sm text-mars-400">
-        <span>{astronaut.gender === 'male' ? '♂ Male' : '♀ Female'}</span>
-        <span className="text-mars-700">|</span>
-        <span>Age <strong className="text-mars-300">{astronaut.age}</strong></span>
-        <span className="text-mars-700">|</span>
-        <span><strong className="text-mars-300">{astronaut.weightKg}</strong> kg</span>
-        <span className="text-mars-700">|</span>
-        <span><strong className="text-mars-300">{astronaut.heightCm}</strong> cm</span>
       </div>
 
       {/* Edit fields */}
@@ -96,12 +111,12 @@ function AstronautCard({ astronaut, onUpdate, onRemove }: {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-mars-900/60 rounded-xl p-4 mb-4 border border-mars-800/50">
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <label className="text-sm text-mars-400 font-medium">
+            <div className="bg-mars-900/60 mx-4 mb-3 rounded-xl p-3 border border-mars-800/50">
+              <div className="grid grid-cols-4 gap-2">
+                <label className="text-xs text-mars-400">
                   Gender
                   <select
-                    className="block mt-1 w-full bg-mars-800 text-white text-sm rounded-lg px-3 py-2 border border-mars-700 focus:border-rust-400 outline-none"
+                    className="block mt-0.5 w-full bg-mars-800 text-white text-xs rounded-lg px-2 py-1.5 border border-mars-700 focus:border-rust-400 outline-none"
                     value={astronaut.gender}
                     onChange={e => onUpdate({ ...astronaut, gender: e.target.value as Gender })}
                   >
@@ -109,41 +124,35 @@ function AstronautCard({ astronaut, onUpdate, onRemove }: {
                     <option value="female">Female</option>
                   </select>
                 </label>
-                <label className="text-sm text-mars-400 font-medium">
+                <label className="text-xs text-mars-400">
                   Age
-                  <input
-                    type="number"
-                    min={20} max={65}
-                    className="block mt-1 w-full bg-mars-800 text-white text-sm rounded-lg px-3 py-2 border border-mars-700 focus:border-rust-400 outline-none"
+                  <input type="number" min={20} max={65}
+                    className="block mt-0.5 w-full bg-mars-800 text-white text-xs rounded-lg px-2 py-1.5 border border-mars-700 focus:border-rust-400 outline-none"
                     value={astronaut.age}
                     onChange={e => onUpdate({ ...astronaut, age: Math.max(20, Math.min(65, +e.target.value || 20)) })}
                   />
                 </label>
-                <label className="text-sm text-mars-400 font-medium">
-                  Weight (kg)
-                  <input
-                    type="number"
-                    min={40} max={140}
-                    className="block mt-1 w-full bg-mars-800 text-white text-sm rounded-lg px-3 py-2 border border-mars-700 focus:border-rust-400 outline-none"
+                <label className="text-xs text-mars-400">
+                  Weight
+                  <input type="number" min={40} max={140}
+                    className="block mt-0.5 w-full bg-mars-800 text-white text-xs rounded-lg px-2 py-1.5 border border-mars-700 focus:border-rust-400 outline-none"
                     value={astronaut.weightKg}
                     onChange={e => onUpdate({ ...astronaut, weightKg: Math.max(40, Math.min(140, +e.target.value || 40)) })}
                   />
                 </label>
-                <label className="text-sm text-mars-400 font-medium">
-                  Height (cm)
-                  <input
-                    type="number"
-                    min={140} max={210}
-                    className="block mt-1 w-full bg-mars-800 text-white text-sm rounded-lg px-3 py-2 border border-mars-700 focus:border-rust-400 outline-none"
+                <label className="text-xs text-mars-400">
+                  Height
+                  <input type="number" min={140} max={210}
+                    className="block mt-0.5 w-full bg-mars-800 text-white text-xs rounded-lg px-2 py-1.5 border border-mars-700 focus:border-rust-400 outline-none"
                     value={astronaut.heightCm}
                     onChange={e => onUpdate({ ...astronaut, heightCm: Math.max(140, Math.min(210, +e.target.value || 140)) })}
                   />
                 </label>
               </div>
-              <label className="text-sm text-mars-400 font-medium block">
+              <label className="text-xs text-mars-400 block mt-2">
                 Activity Level
                 <select
-                  className="block mt-1 w-full bg-mars-800 text-white text-sm rounded-lg px-3 py-2 border border-mars-700 focus:border-rust-400 outline-none"
+                  className="block mt-0.5 w-full bg-mars-800 text-white text-xs rounded-lg px-2 py-1.5 border border-mars-700 focus:border-rust-400 outline-none"
                   value={astronaut.activityLevel}
                   onChange={e => onUpdate({ ...astronaut, activityLevel: e.target.value as ActivityLevel })}
                 >
@@ -157,19 +166,19 @@ function AstronautCard({ astronaut, onUpdate, onRemove }: {
         )}
       </AnimatePresence>
 
-      {/* Nutritional needs summary */}
-      <div className="grid grid-cols-3 gap-3 text-center">
-        <div className="bg-mars-900/60 rounded-xl py-3 px-2 border border-mars-800/40">
-          <div className="text-lg font-bold text-sun-400">{needs.dailyCalories.toLocaleString()}</div>
-          <div className="text-xs text-mars-400 mt-0.5">kcal / day</div>
+      {/* Compact nutrition row */}
+      <div className="grid grid-cols-3 gap-2 px-4 pb-3">
+        <div className="bg-mars-900/60 rounded-lg py-2 px-1 text-center border border-mars-800/40">
+          <div className="text-sm font-bold text-sun-400">{needs.dailyCalories.toLocaleString()}</div>
+          <div className="text-[10px] text-mars-500">kcal</div>
         </div>
-        <div className="bg-mars-900/60 rounded-xl py-3 px-2 border border-mars-800/40">
-          <div className="text-lg font-bold text-water-400">{needs.dailyProtein}g</div>
-          <div className="text-xs text-mars-400 mt-0.5">protein / day</div>
+        <div className="bg-mars-900/60 rounded-lg py-2 px-1 text-center border border-mars-800/40">
+          <div className="text-sm font-bold text-water-400">{needs.dailyProtein}g</div>
+          <div className="text-[10px] text-mars-500">protein</div>
         </div>
-        <div className="bg-mars-900/60 rounded-xl py-3 px-2 border border-mars-800/40">
-          <div className="text-lg font-bold text-rust-400">{needs.dailyVitaminC}mg</div>
-          <div className="text-xs text-mars-400 mt-0.5">vitamin C / day</div>
+        <div className="bg-mars-900/60 rounded-lg py-2 px-1 text-center border border-mars-800/40">
+          <div className="text-sm font-bold text-rust-400">{needs.dailyVitaminC}mg</div>
+          <div className="text-[10px] text-mars-500">vit C</div>
         </div>
       </div>
     </motion.div>
@@ -223,51 +232,52 @@ export default function CrewConfig({ crew, crewTarget, onUpdateCrew }: Props) {
         </button>
       </div>
 
-      {/* Crew list */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-1 min-h-0">
-        <AnimatePresence>
-          {crew.map((a, i) => (
-            <AstronautCard
-              key={a.id}
-              astronaut={a}
-              onUpdate={updated => handleUpdate(i, updated)}
-              onRemove={() => handleRemove(i)}
-            />
-          ))}
-        </AnimatePresence>
+      {/* Crew grid */}
+      <div className="flex-1 overflow-y-auto pr-1 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <AnimatePresence>
+            {crew.map((a, i) => (
+              <AstronautCard
+                key={a.id}
+                astronaut={a}
+                index={i}
+                onUpdate={updated => handleUpdate(i, updated)}
+                onRemove={() => handleRemove(i)}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Aggregate Summary */}
-      <div className="mt-4 pt-4 border-t border-mars-700">
-        <div className="text-sm font-semibold text-mars-300 uppercase tracking-wider mb-3">
+      <div className="mt-3 pt-3 border-t border-mars-700">
+        <div className="text-xs font-semibold text-mars-400 uppercase tracking-wider mb-2">
           Total Daily Crew Requirements
         </div>
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div className="bg-mars-900/60 rounded-xl py-3 border border-mars-800/40">
-            <div className="text-xl font-bold text-sun-400">{crewTarget.dailyCalories.toLocaleString()}</div>
-            <div className="text-xs text-mars-400 mt-0.5">kcal / day</div>
+        <div className="grid grid-cols-6 gap-2 text-center">
+          <div className="bg-mars-900/60 rounded-lg py-2 border border-mars-800/40">
+            <div className="text-base font-bold text-sun-400">{crewTarget.dailyCalories.toLocaleString()}</div>
+            <div className="text-[10px] text-mars-500">kcal</div>
           </div>
-          <div className="bg-mars-900/60 rounded-xl py-3 border border-mars-800/40">
-            <div className="text-xl font-bold text-water-400">{crewTarget.dailyProtein}g</div>
-            <div className="text-xs text-mars-400 mt-0.5">protein / day</div>
+          <div className="bg-mars-900/60 rounded-lg py-2 border border-mars-800/40">
+            <div className="text-base font-bold text-water-400">{crewTarget.dailyProtein}g</div>
+            <div className="text-[10px] text-mars-500">protein</div>
           </div>
-          <div className="bg-mars-900/60 rounded-xl py-3 border border-mars-800/40">
-            <div className="text-xl font-bold text-rust-400">{crewTarget.dailyVitaminC}mg</div>
-            <div className="text-xs text-mars-400 mt-0.5">vitamin C / day</div>
+          <div className="bg-mars-900/60 rounded-lg py-2 border border-mars-800/40">
+            <div className="text-base font-bold text-rust-400">{crewTarget.dailyVitaminC}mg</div>
+            <div className="text-[10px] text-mars-500">vit C</div>
           </div>
-        </div>
-        <div className="grid grid-cols-3 gap-3 text-center mt-3">
-          <div className="bg-mars-900/60 rounded-xl py-3 border border-mars-800/40">
-            <div className="text-xl font-bold text-bio-400">{crewTarget.dailyFiber}g</div>
-            <div className="text-xs text-mars-400 mt-0.5">fiber / day</div>
+          <div className="bg-mars-900/60 rounded-lg py-2 border border-mars-800/40">
+            <div className="text-base font-bold text-bio-400">{crewTarget.dailyFiber}g</div>
+            <div className="text-[10px] text-mars-500">fiber</div>
           </div>
-          <div className="bg-mars-900/60 rounded-xl py-3 border border-mars-800/40">
-            <div className="text-xl font-bold text-alert-400">{crewTarget.dailyIron}mg</div>
-            <div className="text-xs text-mars-400 mt-0.5">iron / day</div>
+          <div className="bg-mars-900/60 rounded-lg py-2 border border-mars-800/40">
+            <div className="text-base font-bold text-alert-400">{crewTarget.dailyIron}mg</div>
+            <div className="text-[10px] text-mars-500">iron</div>
           </div>
-          <div className="bg-mars-900/60 rounded-xl py-3 border border-mars-800/40">
-            <div className="text-xl font-bold text-mars-300">{crewTarget.dailyCalcium}mg</div>
-            <div className="text-xs text-mars-400 mt-0.5">calcium / day</div>
+          <div className="bg-mars-900/60 rounded-lg py-2 border border-mars-800/40">
+            <div className="text-base font-bold text-mars-300">{crewTarget.dailyCalcium}mg</div>
+            <div className="text-[10px] text-mars-500">calcium</div>
           </div>
         </div>
       </div>

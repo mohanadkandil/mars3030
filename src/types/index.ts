@@ -73,6 +73,7 @@ export interface SimulationState {
   running: boolean;
   speed: number;
   missionDays: number;  // configurable mission length
+  initialFoodDays: number; // sols of pre-packed food supply
   
   // Environment
   insideTemp: number;
@@ -113,6 +114,11 @@ export interface SimulationState {
 
   // Production tracking
   productionLog: ProductionSnapshot[];
+
+  // Food stores & consumption
+  foodStores: Record<string, FoodStoreEntry>;
+  consumptionLog: ConsumptionEntry[];
+  prePackedCaloriesRemaining: number;  // kcal remaining from pre-packed supply
 
   // Crew actions awaiting manual confirmation
   pendingActions: PendingCrewAction[];
@@ -188,10 +194,29 @@ export interface ProductionSnapshot {
   vitaminC: number;
 }
 
+// Food store entry — kg of each crop in storage
+export interface FoodStoreEntry {
+  cropId: string;
+  kgStored: number;
+  totalHarvestedKg: number;  // lifetime total harvested of this crop
+  totalConsumedKg: number;   // lifetime total consumed of this crop
+  harvestCount: number;      // how many times harvested
+}
+
+// Consumption log — what crew ate each day
+export interface ConsumptionEntry {
+  day: number;
+  items: { cropId: string; kgConsumed: number; calories: number; protein: number }[];
+  totalCalories: number;
+  totalProtein: number;
+  fromPrePacked: number;  // kcal from pre-packed food
+}
+
 // Mission configuration — pre-launch setup
 export interface MissionConfig {
   missionDays: number;            // total mission length
   greenhouseArea: number;         // m² total
+  initialFoodDays: number;        // days of pre-packed food supply
   waterReservoir: number;         // liters
   waterCapacity: number;          // liters
   energyStored: number;           // kWh

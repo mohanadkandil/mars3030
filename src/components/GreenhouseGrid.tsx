@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useCallback, type WheelEvent, type MouseEvent, type PointerEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CropZone, SimEvent } from '../types';
-import { CROPS, GREENHOUSE_AREA } from '../data/crops';
+import { SEED_LIBRARY, GREENHOUSE_AREA } from '../data/crops';
 
 interface Props {
   zones: CropZone[];
@@ -15,7 +15,7 @@ const ROWS = 10;
 const CELL = 1;
 
 function getCrop(id: string) {
-  return CROPS.find(c => c.id === id)!;
+  return SEED_LIBRARY.find(c => c.id === id)!;
 }
 
 function buildGrid(zones: CropZone[]) {

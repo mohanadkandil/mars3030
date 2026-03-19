@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PendingCrewAction } from '../types';
-import { CROPS } from '../data/crops';
+import { SEED_LIBRARY } from '../data/crops';
 
 interface Props {
   actions: PendingCrewAction[];
@@ -10,7 +10,7 @@ interface Props {
 }
 
 function getCropEmoji(cropId: string) {
-  return CROPS.find(c => c.id === cropId)?.emoji || '🌱';
+  return SEED_LIBRARY.find(c => c.id === cropId)?.emoji || '🌱';
 }
 
 function ActionCard({ action, onConfirm, onDismiss }: {

@@ -17,12 +17,14 @@ import CrewActionAlert from './components/CrewActionAlert';
 import MarsWeatherMap from './components/MarsWeatherMap';
 import MissionSetup from './components/MissionSetup';
 import SeedLibrary from './components/SeedLibrary';
+import HarvestOrganizer from './components/HarvestOrganizer';
 
-type TabId = 'dashboard' | 'greenhouse' | 'analytics' | 'control' | 'assistant' | 'crew' | 'weather' | 'seeds';
+type TabId = 'dashboard' | 'greenhouse' | 'analytics' | 'control' | 'assistant' | 'crew' | 'weather' | 'harvest' | 'seeds';
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊' },
   { id: 'greenhouse', label: 'Greenhouse', icon: '🌱' },
+  { id: 'harvest', label: 'Food & Harvest', icon: '🌾' },
   { id: 'analytics', label: 'Analytics', icon: '📈' },
   { id: 'control', label: 'Mission Control', icon: '🎛️' },
   { id: 'crew', label: 'Crew', icon: '👨‍🚀' },
@@ -132,7 +134,7 @@ export default function App() {
         {/* Header */}
         <div className="relative z-10 text-center pt-6 pb-2">
           <h1 className="text-5xl font-bold text-white tracking-tight">
-            🚀 Mars 3030 — Mission Setup
+            🚀 Mission Setup
           </h1>
           <p className="text-lg text-white/60 mt-1">
             Configure crew, resources, and seeds before launching your greenhouse mission
@@ -322,6 +324,37 @@ export default function App() {
         {/* Seed Library — Complete crop catalog with nutrition & Mars suitability */}
         {activeTab === 'seeds' && (
           <SeedLibrary />
+        )}
+
+        {/* Harvest & Food Organizer — Food stores, harvest log, consumption tracking */}
+        {activeTab === 'harvest' && (
+          <div className="h-full grid grid-cols-12 gap-3">
+            <div className="col-span-8 min-h-0">
+              <HarvestOrganizer
+                foodStores={state.foodStores}
+                consumptionLog={state.consumptionLog}
+                productionLog={state.productionLog}
+                prePackedCaloriesRemaining={state.prePackedCaloriesRemaining}
+                totalHarvested={state.totalHarvested}
+                crewTarget={state.crewNutrientTarget}
+                day={state.day}
+                initialFoodDays={state.initialFoodDays}
+                crewSize={state.crew.length}
+              />
+            </div>
+            <div className="col-span-4 flex flex-col gap-3 min-h-0">
+              <div className="flex-1 min-h-0">
+                <NutritionPanel
+                  dailyCalories={state.dailyCalories}
+                  dailyProtein={state.dailyProtein}
+                  dailyVitaminC={state.dailyVitaminC}
+                  totalHarvested={state.totalHarvested}
+                  day={state.day}
+                  crewTarget={state.crewNutrientTarget}
+                />
+              </div>
+            </div>
+          </div>
         )}
 
         {/* AI Assistant — Chat with the MCP Knowledge Base */}

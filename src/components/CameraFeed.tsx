@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CropZone } from '../types';
-import { CROPS } from '../data/crops';
+import { SEED_LIBRARY } from '../data/crops';
 
 interface Props {
   zones: CropZone[];
@@ -10,7 +10,7 @@ interface Props {
 }
 
 function getCrop(id: string) {
-  return CROPS.find(c => c.id === id)!;
+  return SEED_LIBRARY.find(c => c.id === id)!;
 }
 
 /* Simulated detection bounding boxes for AI vision */

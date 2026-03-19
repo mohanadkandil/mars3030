@@ -102,6 +102,7 @@ export function createInitialState(config?: MissionConfig): SimulationState {
   }
 
   const missionDays = config?.missionDays ?? 450;
+  const initialFoodDays = config?.initialFoodDays ?? 90;
 
   return {
     day: 1,
@@ -109,6 +110,7 @@ export function createInitialState(config?: MissionConfig): SimulationState {
     running: false,
     speed: 1,
     missionDays,
+    initialFoodDays,
     insideTemp: 21,
     insideHumidity: 58,
     outsideTemp: -63,
@@ -133,6 +135,9 @@ export function createInitialState(config?: MissionConfig): SimulationState {
     crew,
     crewNutrientTarget,
     productionLog: [],
+    foodStores: {},
+    consumptionLog: [],
+    prePackedCaloriesRemaining: initialFoodDays * crewNutrientTarget.dailyCalories,
     pendingActions: [],
     activeEvents: [],
     agentLog: [
@@ -293,6 +298,65 @@ export function simulateDay(state: SimulationState): SimulationState {
   next.dailyVitaminC = growingOutput.vitc + dayVitaminC;
   next.totalCalories += next.dailyCalories;
   next.totalProtein += next.dailyProtein;
+
+  // ─── Crew daily consumption ───
+  // Crew eats from food stores first, then pre-packed supply
+  const crewCalNeed = next.crewNutrientTarget.dailyCalories;
+  const crewProtNeed = next.crewNutrientTarget.dailyProtein;
+  let calRemaining = crewCalNeed;
+  let protRemaining = crewProtNeed;
+  const consumedItems: { cropId: string; kgConsumed: number; calories: number; protein: number }[] = [];
+
+  // Consume from food stores — prioritize perishable (leafy, herb) first, then balanced
+  const storeEntries = Object.entries(next.foodStores)
+    .filter(([, e]) => e.kgStored > 0)
+    .sort((a, b) => {
+      const cropA = getCrop(a[0]);
+      const cropB = getCrop(b[0]);
+      // Eat perishables first (leafy, herb → fruit → others)
+      const perishOrder: Record<string, number> = { leafy: 0, herb: 1, fruit: 2, legume: 3, root: 4, grain: 5 };
+      return (perishOrder[cropA.category] ?? 3) - (perishOrder[cropB.category] ?? 3);
+    });
+
+  for (const [cropId, entry] of storeEntries) {
+    if (calRemaining <= 0) break;
+    const crop = getCrop(cropId);
+    // How much kg needed to meet remaining calorie need from this crop
+    const kgForCal = calRemaining / crop.caloriesPerKg;
+    const kgConsumed = Math.min(entry.kgStored, kgForCal);
+    const calFromCrop = kgConsumed * crop.caloriesPerKg;
+    const protFromCrop = kgConsumed * crop.proteinPerKg;
+
+    next.foodStores[cropId] = {
+      ...entry,
+      kgStored: entry.kgStored - kgConsumed,
+      totalConsumedKg: entry.totalConsumedKg + kgConsumed,
+    };
+    calRemaining -= calFromCrop;
+    protRemaining -= protFromCrop;
+    if (kgConsumed > 0.001) {
+      consumedItems.push({ cropId, kgConsumed, calories: calFromCrop, protein: protFromCrop });
+    }
+  }
+
+  // Remaining calories come from pre-packed food
+  let fromPrePacked = 0;
+  if (calRemaining > 0 && next.prePackedCaloriesRemaining > 0) {
+    fromPrePacked = Math.min(calRemaining, next.prePackedCaloriesRemaining);
+    next.prePackedCaloriesRemaining -= fromPrePacked;
+    calRemaining -= fromPrePacked;
+  }
+
+  // Log consumption every day
+  next.consumptionLog.push({
+    day: next.day,
+    items: consumedItems,
+    totalCalories: crewCalNeed - calRemaining,
+    totalProtein: crewProtNeed - protRemaining,
+    fromPrePacked,
+  });
+  // Keep consumption log trimmed
+  if (next.consumptionLog.length > 500) next.consumptionLog = next.consumptionLog.slice(-500);
 
   // Expire events
   next.activeEvents = next.activeEvents.map(e => ({
@@ -474,6 +538,16 @@ export function confirmAction(state: SimulationState, actionId: string): Simulat
     next.totalHarvested += yieldKg;
     next.totalCalories += crop.caloriesPerKg * yieldKg;
     next.totalProtein += crop.proteinPerKg * yieldKg;
+
+    // Add to food stores
+    const existing = next.foodStores[zone.cropId];
+    next.foodStores[zone.cropId] = {
+      cropId: zone.cropId,
+      kgStored: (existing?.kgStored ?? 0) + yieldKg,
+      totalHarvestedKg: (existing?.totalHarvestedKg ?? 0) + yieldKg,
+      totalConsumedKg: existing?.totalConsumedKg ?? 0,
+      harvestCount: (existing?.harvestCount ?? 0) + 1,
+    };
 
     next.productionLog.push({
       day: next.day,
