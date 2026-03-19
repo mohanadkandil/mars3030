@@ -181,6 +181,8 @@ export type ActivityLevel = 'low' | 'moderate' | 'high';
 export interface Astronaut {
   id: string;
   name: string;
+  title?: string;                // e.g. 'Commander', 'Flight Engineer'
+  photo?: string;                // path to profile image in public/
   age: number;
   gender: Gender;
   weightKg: number;
