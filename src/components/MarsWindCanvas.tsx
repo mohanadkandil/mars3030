@@ -200,7 +200,7 @@ export default function MarsWindCanvas({ weather }: Props) {
     }
 
     const animate = () => {
-      offCtx.fillStyle = 'rgba(10, 10, 15, 0.04)';
+      offCtx.fillStyle = 'rgba(15, 10, 8, 0.03)';
       offCtx.fillRect(0, 0, width, height);
 
       const particles = particlesRef.current;
@@ -245,17 +245,12 @@ export default function MarsWindCanvas({ weather }: Props) {
         offCtx.stroke();
       });
 
-      ctx.fillStyle = '#0f0a08';
-      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(offscreen, 0, 0);
 
       if (weather.dustOpacity > 1) {
-        ctx.fillStyle = `rgba(146, 64, 14, ${Math.min(0.4, weather.dustOpacity * 0.1)})`;
+        ctx.fillStyle = `rgba(146, 64, 14, ${Math.min(0.3, weather.dustOpacity * 0.08)})`;
         ctx.fillRect(0, 0, width, height);
       }
-
-      ctx.globalAlpha = 0.9;
-      ctx.drawImage(offscreen, 0, 0);
-      ctx.globalAlpha = 1;
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 0.5;

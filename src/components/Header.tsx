@@ -17,7 +17,7 @@ export default function Header({ day, solHour, running, speed, onToggle, onSpeed
   const sunProgress = isDaytime ? (solHour - 6) / 12 : 0;
 
   return (
-    <header className="glass-bright rounded-2xl px-5 py-3 flex items-center gap-6">
+    <header className="relative rounded-2xl px-5 py-3 flex items-center gap-6 bg-gradient-to-r from-mars-900/90 via-mars-800/80 to-mars-900/90 backdrop-blur-xl border border-rust-500/30 shadow-lg shadow-rust-500/10 ring-1 ring-rust-400/10">
       {/* Logo */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rust-400 to-rust-500 flex items-center justify-center text-lg shadow-lg">
