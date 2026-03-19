@@ -293,12 +293,13 @@ python server.py
 
 ## 👥 Team
 
-| | Name | Role |
-|---|------|------|
-| <img src="public/crew/sara.png" width="40" /> | **Sara Rutz** | Commander |
-| <img src="public/crew/kate.jpeg" width="40" /> | **Katrina Jaroslavceva** | Flight Engineer |
-| <img src="public/crew/arka.png" width="40" /> | **Arka Mitra** | Science Officer |
-| <img src="public/crew/mo.png" width="40" /> | **Mohanad Kandil** | Systems Engineer |
+<img src="public/crew/sara.png" width="120" /> **S. Rutz** — Commander
+
+<img src="public/crew/kate.jpeg" width="120" /> **K. Jaroslavceva** — Flight Engineer
+
+<img src="public/crew/arka.png" width="120" /> **A. Mitra** — Science Officer
+
+<img src="public/crew/mo.png" width="120" /> **M. Kandil** — Systems Engineer
 
 ---
 
