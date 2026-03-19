@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useVision } from '../hooks/useVision';
 
 interface CameraDevice {
   deviceId: string;
@@ -17,6 +18,9 @@ export default function LiveCameraFeed({ day }: Props) {
   const [active, setActive] = useState(false);
   const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
+
+  // Real Vision Hook
+  const { detections, isBackendReady, modelInfo } = useVision(videoRef, active);
 
   // Enumerate available video devices
   const enumerateCameras = useCallback(async () => {
@@ -94,8 +98,10 @@ export default function LiveCameraFeed({ day }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between mb-3 shrink-0">
         <div className="flex items-center gap-3">
-          <div className={`w-2.5 h-2.5 rounded-full ${active ? 'bg-alert-400 animate-pulse' : 'bg-mars-600'}`} />
-          <h2 className="text-sm font-semibold text-mars-300 uppercase tracking-wider">Live Camera Feed</h2>
+          <div className={`w-2.5 h-2.5 rounded-full ${isBackendReady ? 'bg-green-400' : 'bg-alert-400'} animate-pulse`} />
+          <h2 className="text-sm font-semibold text-mars-300 uppercase tracking-wider">
+            {isBackendReady ? 'Live AI Vision Feed' : 'Live Camera Feed'}
+          </h2>
           <span className="text-[10px] px-2 py-0.5 rounded bg-mars-800 text-mars-500 font-mono">
             CAM-{selectedIdx + 1} · ZONE {String.fromCharCode(65 + selectedIdx)}
           </span>
@@ -148,14 +154,53 @@ export default function LiveCameraFeed({ day }: Props) {
             </div>
           </div>
         ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ transform: 'scaleX(-1)' }}
-          />
+          <>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              crossOrigin="anonymous"
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ transform: 'scaleX(-1)' }}
+            />
+            
+            {/* AI Detection Overlay */}
+            <svg viewBox="0 0 430 260" className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="xMidYMid slice">
+              <AnimatePresence>
+                {isBackendReady && detections.map((det) => (
+                  <motion.g
+                    key={det.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    {/* Bounding box (mirrored to match video) */}
+                    <rect
+                      x={430 - det.x - det.w} y={det.y} width={det.w} height={det.h}
+                      fill="none" stroke={det.color} strokeWidth={1.5}
+                      rx={2}
+                      opacity={0.8}
+                    />
+                    {/* Corner brackets */}
+                    <path d={`M ${430 - det.x - det.w},${det.y + 6} L ${430 - det.x - det.w},${det.y} L ${430 - det.x - det.w + 6},${det.y}`} fill="none" stroke={det.color} strokeWidth={2} />
+                    <path d={`M ${430 - det.x - 6},${det.y} L ${430 - det.x},${det.y} L ${430 - det.x},${det.y + 6}`} fill="none" stroke={det.color} strokeWidth={2} />
+                    <path d={`M ${430 - det.x - det.w},${det.y + det.h - 6} L ${430 - det.x - det.w},${det.y + det.h} L ${430 - det.x - det.w + 6},${det.y + det.h}`} fill="none" stroke={det.color} strokeWidth={2} />
+                    <path d={`M ${430 - det.x - 6},${det.y + det.h} L ${430 - det.x},${det.y + det.h} L ${430 - det.x},${det.y + det.h - 6}`} fill="none" stroke={det.color} strokeWidth={2} />
+                  </motion.g>
+                ))}
+              </AnimatePresence>
+
+              {/* HUD Text */}
+              <div className="absolute bottom-2 left-2 flex flex-col gap-0.5 pointer-events-none">
+                <p className="text-[8px] text-white/25 font-mono">
+                  {isBackendReady && modelInfo
+                    ? `${modelInfo.model.toUpperCase()} | ${modelInfo.device.toUpperCase()} | LIVE WEBCAM | MIRROR ON`
+                    : 'REDHARVESTER AI VISION v2.1 | WAITING FOR BACKEND...'}
+                </p>
+              </div>
+            </svg>
+          </>
         )}
         {/* Vignette */}
         <div className="absolute inset-0 pointer-events-none"

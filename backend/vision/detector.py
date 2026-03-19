@@ -11,7 +11,7 @@ from PIL import Image
 # Configuration
 # Updated default confidence to match test_video.py experiments
 CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.05"))
-MODEL_PATH = os.getenv("MODEL_PATH", "yolov8s-world.pt")
+MODEL_PATH = os.getenv("MODEL_PATH", "yolov8l-worldv2.pt")
 # The user seems to be detecting plants/trees based on comments, but keeping original CLASSES for now
 # unless they are explicitly redefined elsewhere.
 CLASSES = ["red tomato", "green tomato", "potato", "carrot", "lettuce", "cucumber", "red apple", "green apple", "oranges", "plants", "trees", "saplings", "robot arm"]
@@ -32,6 +32,10 @@ class YOLOv8WorldDetector:
             elif torch.cuda.is_available():
                 cls._instance.device = 'cuda'
             
+            # Ensure model exists
+            if not os.path.exists(MODEL_PATH):
+                print(f"📦 Model {MODEL_PATH} not found. Downloading...")
+            
             print(f"Loading YOLOWorld model from {MODEL_PATH} on {cls._instance.device}...")
             
             # Monkeypatch torch.load for PyTorch 2.6+ compatibility
@@ -43,6 +47,7 @@ class YOLOv8WorldDetector:
             torch.load = patched_load
             
             try:
+                # This will automatically download if MODEL_PATH is a string filename not found locally
                 cls._instance.model = YOLOWorld(MODEL_PATH)
                 cls._instance.model.to(cls._instance.device)
                 # Pre-set the classes for zero-shot detection
@@ -71,10 +76,8 @@ class YOLOv8WorldDetector:
         detections = []
         for box in results.boxes:
             b = box.xyxy[0].tolist()
-            conf = float(box.conf)
-            cls_id = int(box.cls)
-            class_name = CLASSES[cls_id]
-            detections.append({"box": b, "confidence": conf, "class_name": class_name})
+            # Only return bounding boxes, no class names or confidence scores
+            detections.append({"box": b})
         
         return None, detections
 
