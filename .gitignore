@@ -11,3 +11,10 @@ __pycache__/
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+
+backend/vision/.venv/
+backend/vision/*.mp4
+*.DS_Store
+*.pt
+
+data/*
