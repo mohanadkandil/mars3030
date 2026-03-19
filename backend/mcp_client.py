@@ -5,8 +5,17 @@ Connects to the Syngenta knowledge base via MCP protocol
 
 import httpx
 import json
-from typing import Any, Optional
+from typing import Any, Optional, List
 import asyncio
+
+
+class KBResult:
+    def __init__(self, content: str, sources: List[dict]):
+        self.content = content
+        self.sources = sources
+
+    def to_dict(self):
+        return {"content": self.content, "sources": self.sources}
 
 
 class MCPClient:
@@ -49,7 +58,7 @@ class MCPClient:
             "protocolVersion": "2024-11-05",
             "capabilities": {},
             "clientInfo": {
-                "name": "mars-seed-lab",
+                "name": "ceres-agent",
                 "version": "1.0.0"
             }
         })
@@ -86,53 +95,56 @@ class MCPClient:
         })
 
         if "result" in result:
-            return self._format_result(result["result"])
+            return self._parse_result(result["result"])
         elif "error" in result:
-            return f"Error querying knowledge base: {result['error']}"
-        return json.dumps(result, indent=2)
+            return KBResult(f"Error querying knowledge base: {result['error']}", [])
+        return KBResult(json.dumps(result, indent=2), [])
 
-    def _format_result(self, result: Any) -> str:
-        """Format the MCP result for display"""
+    def _parse_result(self, result: Any) -> KBResult:
+        sources = []
+        content_parts = []
+
+        if isinstance(result, dict) and "content" in result:
+            contents = result["content"]
+            if isinstance(contents, list):
+                for c in contents:
+                    if isinstance(c, dict) and "text" in c:
+                        text = c["text"]
+                        try:
+                            parsed = json.loads(text)
+                            if "statusCode" in parsed and "body" in parsed:
+                                body = json.loads(parsed["body"])
+                                if "retrieved_chunks" in body:
+                                    for chunk in body["retrieved_chunks"]:
+                                        chunk_content = chunk.get("content", "")
+                                        location = chunk.get("location", {})
+                                        s3_loc = location.get("s3Location", {})
+                                        uri = s3_loc.get("uri", "")
+                                        filename = uri.split("/")[-1] if uri else "Unknown source"
+
+                                        sources.append({
+                                            "filename": filename,
+                                            "content": chunk_content,
+                                            "uri": uri
+                                        })
+                                        content_parts.append(chunk_content[:800])
+
+                                    combined = "\n\n".join(content_parts[:3])
+                                    return KBResult(combined, sources[:5])
+                        except:
+                            pass
+                        content_parts.append(text)
+
+                return KBResult("\n\n".join(content_parts), sources)
+
         if isinstance(result, dict):
-            # Handle the nested response format from Syngenta KB
-            if "content" in result:
-                contents = result["content"]
-                if isinstance(contents, list):
-                    formatted_chunks = []
-                    for c in contents:
-                        if isinstance(c, dict) and "text" in c:
-                            text = c["text"]
-                            # Parse the nested JSON response
-                            try:
-                                parsed = json.loads(text)
-                                if "statusCode" in parsed and "body" in parsed:
-                                    body = json.loads(parsed["body"])
-                                    if "retrieved_chunks" in body:
-                                        for chunk in body["retrieved_chunks"]:
-                                            content = chunk.get("content", "")
-                                            source = chunk.get("location", {}).get("s3Location", {}).get("uri", "")
-                                            if source:
-                                                source = source.split("/")[-1]  # Get filename
-                                            formatted_chunks.append(f"---\n📄 Source: {source}\n\n{content[:1500]}...")
-                                        return "\n\n".join(formatted_chunks[:3])  # Top 3 results
-                            except:
-                                pass
-                            formatted_chunks.append(text)
-                        elif isinstance(c, dict):
-                            formatted_chunks.append(str(c))
-                        else:
-                            formatted_chunks.append(str(c))
-                    return "\n\n".join(formatted_chunks)
-                return str(contents)
-            return json.dumps(result, indent=2)
-        return str(result)
+            return KBResult(json.dumps(result, indent=2), [])
+        return KBResult(str(result), [])
 
     async def close(self):
-        """Close the client connection"""
         await self.client.aclose()
 
 
-# Synchronous wrapper for use in Strands tools
 class SyncMCPClient:
     """Synchronous wrapper for MCPClient"""
 
