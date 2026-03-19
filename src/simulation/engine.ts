@@ -147,7 +147,7 @@ export function createInitialState(config?: MissionConfig): SimulationState {
         id: nextLogId(),
         day: 1,
         type: 'info',
-        message: `AresFarm AI Agent initialized. Beginning ${missionDays}-day greenhouse management protocol.`,
+        message: `RedHarvester AI Agent initialized. Beginning ${missionDays}-day greenhouse management protocol.`,
         reasoning: `Crew nutritional analysis complete: ${crew.length} astronauts, target ${Math.round(crewNutrientTarget.dailyCalories)} kcal/day, ${Math.round(crewNutrientTarget.dailyProtein)}g protein/day based on individual BMR, activity levels, and body composition.`,
       },
       {

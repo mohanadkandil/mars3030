@@ -339,7 +339,7 @@ export default function CameraFeed({ zones, activeEvents, day }: Props) {
             ZONE {String.fromCharCode(65 + selectedZone)} | {crop.name.toUpperCase()} | {zone.area}m²
           </text>
           <text x={10} y={252} fontSize={8} fill="rgba(255,255,255,0.25)" fontFamily="JetBrains Mono">
-            ARESFARM AI VISION v2.1 | RESOLUTION 1920x1080 | IR+VISIBLE
+            REDHARVESTER AI VISION v2.1 | RESOLUTION 1920x1080 | IR+VISIBLE
           </text>
 
           {/* Crosshair center indicator */}

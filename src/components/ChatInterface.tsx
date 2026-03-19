@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 import { initSession, queryKnowledgeBase, getToolDescriptions } from '../services/mcpClient';
 
 interface ChatMessage {
@@ -219,8 +220,20 @@ export default function ChatInterface() {
                     <motion.div className="w-1.5 h-1.5 rounded-full bg-purple-400" animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} />
                   </div>
                 ) : (
-                  <div className="text-xs text-mars-300 whitespace-pre-wrap leading-relaxed">
-                    {msg.content}
+                  <div className="text-xs text-mars-300 leading-relaxed prose prose-invert prose-xs max-w-none
+                    prose-headings:text-mars-200 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1
+                    prose-h1:text-sm prose-h2:text-xs prose-h3:text-xs
+                    prose-p:my-1 prose-p:text-mars-300
+                    prose-strong:text-mars-200
+                    prose-ul:my-1 prose-ul:pl-4 prose-ol:my-1 prose-ol:pl-4
+                    prose-li:my-0.5 prose-li:text-mars-300
+                    prose-code:text-purple-300 prose-code:bg-mars-900/60 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-[11px]
+                    prose-pre:bg-mars-900/80 prose-pre:border prose-pre:border-mars-700/30 prose-pre:rounded-lg prose-pre:my-2
+                    prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+                    prose-hr:border-mars-700/40 prose-hr:my-2
+                    prose-blockquote:border-l-purple-500/40 prose-blockquote:text-mars-400 prose-blockquote:my-2
+                  ">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
                 )}
               </div>

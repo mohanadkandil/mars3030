@@ -17,14 +17,16 @@ export default function Header({ day, solHour, running, speed, onToggle, onSpeed
   const sunProgress = isDaytime ? (solHour - 6) / 12 : 0;
 
   return (
-    <header className="relative rounded-2xl px-5 py-3 flex items-center gap-6 bg-gradient-to-r from-mars-900/90 via-mars-800/80 to-mars-900/90 backdrop-blur-xl border border-rust-500/30 shadow-lg shadow-rust-500/10 ring-1 ring-rust-400/10">
+    <header className="relative rounded-2xl px-5 py-4 flex items-center gap-6 bg-gradient-to-r from-[#2a1508] via-[#1f1210] to-[#2a1508] backdrop-blur-xl border border-rust-400/50 shadow-[0_0_40px_rgba(234,88,12,0.2),0_4px_24px_rgba(0,0,0,0.5)] ring-1 ring-rust-400/25">
+      {/* Top highlight */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-orange-400/60 to-transparent rounded-t-2xl" />
       {/* Logo */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rust-400 to-rust-500 flex items-center justify-center text-lg shadow-lg">
           🌱
         </div>
         <div>
-          <h1 className="text-base font-bold text-mars-300 leading-tight">AresFarm</h1>
+          <h1 className="text-base font-bold text-mars-300 leading-tight">RedHarvester</h1>
           <p className="text-[10px] text-mars-600">Mars Greenhouse AI</p>
         </div>
       </div>
