@@ -94,10 +94,10 @@ export function createInitialState(config?: MissionConfig): SimulationState {
   } else {
     zones = [
       { id: 'z1', cropId: 'lettuce', plantedDay: 0, area: 25, health: 95, growthProgress: 0, waterStress: 0, harvested: false },
-      { id: 'z2', cropId: 'potato',  plantedDay: 0, area: 30, health: 92, growthProgress: 0, waterStress: 0, harvested: false },
-      { id: 'z3', cropId: 'beans',   plantedDay: 0, area: 25, health: 97, growthProgress: 0, waterStress: 0, harvested: false },
-      { id: 'z4', cropId: 'radish',  plantedDay: 0, area: 20, health: 93, growthProgress: 0, waterStress: 0, harvested: false },
-      { id: 'z5', cropId: 'herbs',   plantedDay: 0, area: 20, health: 96, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z2', cropId: 'potato',  plantedDay: 0, area: 25, health: 92, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z3', cropId: 'tomato',  plantedDay: 0, area: 25, health: 94, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z4', cropId: 'beans',   plantedDay: 0, area: 25, health: 97, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z5', cropId: 'radish',  plantedDay: 0, area: 20, health: 93, growthProgress: 0, waterStress: 0, harvested: false },
     ];
   }
 

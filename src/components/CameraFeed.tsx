@@ -405,12 +405,12 @@ export default function CameraFeed({ zones, activeEvents, day, selectedZoneIndex
           /* Real video for tomatoes */
           <video
             key="tomato-video"
-            src="/tomatoes_grow.mp4"
+            src="/annotated.mp4"
             autoPlay
             loop
             muted
             playsInline
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
           />
         ) : (
           /* SVG plant scene for other crops */
@@ -420,14 +420,14 @@ export default function CameraFeed({ zones, activeEvents, day, selectedZoneIndex
           </svg>
         )}
 
-        {/* AI detection + HUD overlay */}
+        {/* AI detection + HUD overlay (skip for tomato — annotations baked into video) */}
         <svg viewBox="0 0 430 260" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
           {/* Scan lines */}
-          <ScanLines />
+          {!isTomato && <ScanLines />}
 
           {/* AI Detection bounding boxes */}
           <AnimatePresence>
-            {detections.slice(0, 8).map((det) => (
+            {!isTomato && detections.slice(0, 8).map((det) => (
               <motion.g
                 key={det.id}
                 initial={{ opacity: 0 }}
