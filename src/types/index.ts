@@ -240,10 +240,11 @@ export interface SeedAllocation {
 export interface PendingCrewAction {
   id: string;
   day: number;
-  type: 'harvest' | 'replant';
+  type: 'harvest' | 'replant' | 'water_mining' | 'water_rationing';
   zoneId: string;
   cropId: string;           // current crop (for harvest) or new crop (for replant)
   description: string;
   reasoning: string;
   newCropId?: string;       // only for replant — what the agent recommends
+  waterYield?: number;      // liters expected from mining expedition
 }
