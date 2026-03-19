@@ -451,17 +451,23 @@ export function simulateDay(state: SimulationState): SimulationState {
     });
   }
 
-  // Record history
-  if (next.day % 3 === 0 || next.day <= 5) {
-    next.history.push({
-      day: next.day,
-      calories: Math.round(next.dailyCalories),
-      protein: Math.round(next.dailyProtein),
-      water: Math.round(next.waterReservoir),
-      energy: Math.round(next.energyStored),
-      avgHealth: Math.round(avgHealth),
-    });
-  }
+  // Record history every day — use actual consumed values from today's consumption log
+  const todayConsumption = next.consumptionLog[next.consumptionLog.length - 1];
+  next.history.push({
+    day: next.day,
+    calories: Math.round(todayConsumption?.totalCalories ?? 0),
+    protein: Math.round(todayConsumption?.totalProtein ?? 0),
+    dailyOutput: Math.round(next.dailyCalories),
+    water: Math.round(next.waterReservoir),
+    energy: Math.round(next.energyStored),
+    avgHealth: Math.round(avgHealth),
+    cropStores: Object.fromEntries(
+      Object.entries(next.foodStores).map(([id, s]) => [id, Math.round(s.kgStored * 10) / 10])
+    ),
+    cropHarvested: Object.fromEntries(
+      Object.entries(next.foodStores).map(([id, s]) => [id, Math.round(s.totalHarvestedKg * 10) / 10])
+    ),
+  });
 
   // Trim log to last 50 entries
   if (next.agentLog.length > 50) next.agentLog = next.agentLog.slice(0, 50);

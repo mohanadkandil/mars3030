@@ -137,11 +137,14 @@ export interface SimulationState {
 
 export interface DaySnapshot {
   day: number;
-  calories: number;
-  protein: number;
+  calories: number;        // actual consumed kcal this day
+  protein: number;         // actual consumed protein (g)
+  dailyOutput: number;     // theoretical daily yield from growing crops (kcal)
   water: number;
   energy: number;
   avgHealth: number;
+  cropStores: Record<string, number>;    // cropId -> kg currently stored
+  cropHarvested: Record<string, number>; // cropId -> cumulative kg harvested
 }
 
 export interface SimEvent {

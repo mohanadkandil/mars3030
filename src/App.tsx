@@ -3,7 +3,6 @@ import { SimulationState, SimEvent, Astronaut, MissionConfig } from './types';
 import { createInitialState, simulateDay, injectEvent, confirmAction, dismissAction, confirmAllActions } from './simulation/engine';
 import { calculateCrewNeeds } from './data/crew';
 import Header from './components/Header';
-import GreenhouseView from './components/GreenhouseView';
 import GreenhouseGrid from './components/GreenhouseGrid';
 import CameraFeed from './components/CameraFeed';
 import ResourcePanel from './components/ResourcePanel';
@@ -37,6 +36,7 @@ export default function App() {
   const [state, setState] = useState<SimulationState>(createInitialState);
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [setupComplete, setSetupComplete] = useState(false);
+  const [autoApprove, setAutoApprove] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const tick = useCallback(() => {
@@ -60,6 +60,13 @@ export default function App() {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [state.running, state.speed, tick]);
+
+  // Auto-approve: when enabled, auto-confirm all pending actions immediately
+  useEffect(() => {
+    if (autoApprove && state.pendingActions.length > 0) {
+      setState(prev => confirmAllActions(prev));
+    }
+  }, [autoApprove, state.pendingActions.length]);
 
   const toggleRunning = () => {
     setState(prev => ({ ...prev, running: !prev.running }));
@@ -156,13 +163,15 @@ export default function App() {
 
   return (
     <div className="mars-bg h-screen w-screen flex flex-col p-3 gap-3 overflow-hidden">
-      {/* Crew Action Alert — modal overlay */}
-      <CrewActionAlert
-        actions={state.pendingActions}
-        onConfirm={handleConfirmAction}
-        onDismiss={handleDismissAction}
-        onConfirmAll={handleConfirmAll}
-      />
+      {/* Crew Action Alert — modal overlay (hidden when auto-approve is on) */}
+      {!autoApprove && (
+        <CrewActionAlert
+          actions={state.pendingActions}
+          onConfirm={handleConfirmAction}
+          onDismiss={handleDismissAction}
+          onConfirmAll={handleConfirmAll}
+        />
+      )}
 
       {/* Header */}
       <Header
@@ -236,16 +245,13 @@ export default function App() {
           </div>
         )}
 
-        {/* Greenhouse — Full digital twin + camera feed + grid */}
+        {/* Greenhouse — Interactive grid + camera feed */}
         {activeTab === 'greenhouse' && (
           <div className="h-full grid grid-cols-12 gap-3">
-            <div className="col-span-4 min-h-0">
-              <GreenhouseView zones={state.zones} activeEvents={state.activeEvents} day={state.day} />
-            </div>
-            <div className="col-span-4 min-h-0">
+            <div className="col-span-7 min-h-0">
               <GreenhouseGrid zones={state.zones} activeEvents={state.activeEvents} solHour={state.solHour} greenhouseArea={state.greenhouseArea} />
             </div>
-            <div className="col-span-4 min-h-0">
+            <div className="col-span-5 min-h-0">
               <CameraFeed zones={state.zones} activeEvents={state.activeEvents} day={state.day} />
             </div>
           </div>
@@ -372,27 +378,41 @@ export default function App() {
         )}
       </div>
 
-      {/* Persistent stop/resume button — always accessible, even over modals */}
-      <button
-        onClick={toggleRunning}
-        className={`fixed bottom-6 right-6 z-[100] w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 active:scale-90 ${
-          state.running
-            ? 'bg-alert-500 hover:bg-alert-400 text-white shadow-alert-500/40'
-            : 'bg-bio-500 hover:bg-bio-400 text-white shadow-bio-500/40'
-        }`}
-        title={state.running ? 'Pause Simulation' : 'Resume Simulation'}
-      >
-        {state.running ? (
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-            <rect x="4" y="3" width="4" height="14" rx="1" />
-            <rect x="12" y="3" width="4" height="14" rx="1" />
-          </svg>
-        ) : (
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-            <polygon points="5,3 17,10 5,17" />
-          </svg>
-        )}
-      </button>
+      {/* Persistent stop/resume button + auto-approve toggle */}
+      <div className="fixed bottom-6 right-6 z-[100] flex items-center gap-3">
+        <label
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-mars-900/90 border border-mars-700/50 backdrop-blur-sm cursor-pointer select-none"
+          title="When enabled, harvest and replant actions are automatically confirmed"
+        >
+          <input
+            type="checkbox"
+            checked={autoApprove}
+            onChange={e => setAutoApprove(e.target.checked)}
+            className="w-4 h-4 rounded accent-orange-500"
+          />
+          <span className="text-xs text-mars-400 whitespace-nowrap">Auto-approve</span>
+        </label>
+        <button
+          onClick={toggleRunning}
+          className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 active:scale-90 ${
+            state.running
+              ? 'bg-alert-500 hover:bg-alert-400 text-white shadow-alert-500/40'
+              : 'bg-bio-500 hover:bg-bio-400 text-white shadow-bio-500/40'
+          }`}
+          title={state.running ? 'Pause Simulation' : 'Resume Simulation'}
+        >
+          {state.running ? (
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <rect x="4" y="3" width="4" height="14" rx="1" />
+              <rect x="12" y="3" width="4" height="14" rx="1" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <polygon points="5,3 17,10 5,17" />
+            </svg>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
