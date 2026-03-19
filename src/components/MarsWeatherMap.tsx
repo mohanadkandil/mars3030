@@ -376,10 +376,6 @@ function SunriseSunsetPanel({ data }: { data: PSGMarsData }) {
             </text>
           </svg>
         </div>
-
-        <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-orange-600 to-red-900 flex items-center justify-center">
-          <span className="text-mars-300">📍</span>
-        </div>
       </div>
 
       <div className="text-[10px] text-mars-500 mt-2">
