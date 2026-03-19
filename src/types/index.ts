@@ -72,6 +72,7 @@ export interface SimulationState {
   solHour: number;
   running: boolean;
   speed: number;
+  missionDays: number;  // configurable mission length
   
   // Environment
   insideTemp: number;
@@ -185,6 +186,24 @@ export interface ProductionSnapshot {
   calories: number;
   protein: number;
   vitaminC: number;
+}
+
+// Mission configuration — pre-launch setup
+export interface MissionConfig {
+  missionDays: number;            // total mission length
+  greenhouseArea: number;         // m² total
+  waterReservoir: number;         // liters
+  waterCapacity: number;          // liters
+  energyStored: number;           // kWh
+  energyCapacity: number;         // kWh
+  nutrientReservoir: number;      // kg
+  nutrientCapacity: number;       // kg
+  selectedSeeds: SeedAllocation[];
+}
+
+export interface SeedAllocation {
+  cropId: string;
+  area: number;  // m² allocated
 }
 
 // Crew action that requires manual confirmation

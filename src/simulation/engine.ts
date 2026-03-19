@@ -1,5 +1,5 @@
-import { SimulationState, CropZone, AgentLogEntry, DaySnapshot, SimEvent, ProductionSnapshot, PendingCrewAction, MarsWeather } from '../types';
-import { CROPS, GREENHOUSE_AREA } from '../data/crops';
+import { SimulationState, CropZone, AgentLogEntry, DaySnapshot, SimEvent, ProductionSnapshot, PendingCrewAction, MarsWeather, MissionConfig } from '../types';
+import { CROPS, SEED_LIBRARY, GREENHOUSE_AREA } from '../data/crops';
 import { DEFAULT_CREW, calculateCrewNeeds } from '../data/crew';
 
 let logIdCounter = 0;
@@ -8,7 +8,7 @@ let eventIdCounter = 0;
 const nextEventId = () => `evt-${++eventIdCounter}`;
 
 function getCrop(id: string) {
-  return CROPS.find(c => c.id === id)!;
+  return SEED_LIBRARY.find(c => c.id === id) ?? CROPS.find(c => c.id === id)!;
 }
 
 // Mars weather simulation based on real Martian atmospheric data
@@ -74,38 +74,55 @@ function generateMarsWeather(day: number, solHour: number, hasStorm: boolean): M
   };
 }
 
-export function createInitialState(): SimulationState {
+export function createInitialState(config?: MissionConfig): SimulationState {
   const crew = structuredClone(DEFAULT_CREW);
   const crewNutrientTarget = calculateCrewNeeds(crew);
 
-  // Start with a pre-planned crop layout
-  const zones: CropZone[] = [
-    { id: 'z1', cropId: 'lettuce', plantedDay: 0, area: 25, health: 95, growthProgress: 0, waterStress: 0, harvested: false },
-    { id: 'z2', cropId: 'potato',  plantedDay: 0, area: 30, health: 92, growthProgress: 0, waterStress: 0, harvested: false },
-    { id: 'z3', cropId: 'beans',   plantedDay: 0, area: 25, health: 97, growthProgress: 0, waterStress: 0, harvested: false },
-    { id: 'z4', cropId: 'radish',  plantedDay: 0, area: 20, health: 93, growthProgress: 0, waterStress: 0, harvested: false },
-    { id: 'z5', cropId: 'herbs',   plantedDay: 0, area: 20, health: 96, growthProgress: 0, waterStress: 0, harvested: false },
-  ];
+  // Build zones from config seed selection, or fall back to defaults
+  let zones: CropZone[];
+  if (config?.selectedSeeds && config.selectedSeeds.length > 0) {
+    zones = config.selectedSeeds.map((s, i) => ({
+      id: `z${i + 1}`,
+      cropId: s.cropId,
+      plantedDay: 0,
+      area: s.area,
+      health: 90 + Math.random() * 10,
+      growthProgress: 0,
+      waterStress: 0,
+      harvested: false,
+    }));
+  } else {
+    zones = [
+      { id: 'z1', cropId: 'lettuce', plantedDay: 0, area: 25, health: 95, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z2', cropId: 'potato',  plantedDay: 0, area: 30, health: 92, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z3', cropId: 'beans',   plantedDay: 0, area: 25, health: 97, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z4', cropId: 'radish',  plantedDay: 0, area: 20, health: 93, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z5', cropId: 'herbs',   plantedDay: 0, area: 20, health: 96, growthProgress: 0, waterStress: 0, harvested: false },
+    ];
+  }
+
+  const missionDays = config?.missionDays ?? 450;
 
   return {
     day: 1,
     solHour: 6,
     running: false,
     speed: 1,
+    missionDays,
     insideTemp: 21,
     insideHumidity: 58,
     outsideTemp: -63,
     co2Level: 800,
     lightIntensity: 85,
     marsWeather: generateMarsWeather(1, 6, false),
-    waterReservoir: 8000,
-    waterCapacity: 10000,
+    waterReservoir: config?.waterReservoir ?? 8000,
+    waterCapacity: config?.waterCapacity ?? 10000,
     waterRecycleRate: 35,
-    energyStored: 500,
-    energyCapacity: 800,
+    energyStored: config?.energyStored ?? 500,
+    energyCapacity: config?.energyCapacity ?? 800,
     solarOutput: 120,
-    nutrientReservoir: 2000,
-    nutrientCapacity: 2500,
+    nutrientReservoir: config?.nutrientReservoir ?? 2000,
+    nutrientCapacity: config?.nutrientCapacity ?? 2500,
     zones,
     totalHarvested: 0,
     dailyCalories: 0,
@@ -123,7 +140,7 @@ export function createInitialState(): SimulationState {
         id: nextLogId(),
         day: 1,
         type: 'info',
-        message: 'AresFarm AI Agent initialized. Beginning 450-day greenhouse management protocol.',
+        message: `AresFarm AI Agent initialized. Beginning ${missionDays}-day greenhouse management protocol.`,
         reasoning: `Crew nutritional analysis complete: ${crew.length} astronauts, target ${Math.round(crewNutrientTarget.dailyCalories)} kcal/day, ${Math.round(crewNutrientTarget.dailyProtein)}g protein/day based on individual BMR, activity levels, and body composition.`,
       },
       {

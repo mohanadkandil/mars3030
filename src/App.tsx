@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SimulationState, SimEvent, Astronaut } from './types';
+import { SimulationState, SimEvent, Astronaut, MissionConfig } from './types';
 import { createInitialState, simulateDay, injectEvent, confirmAction, dismissAction, confirmAllActions } from './simulation/engine';
 import { calculateCrewNeeds } from './data/crew';
 import Header from './components/Header';
@@ -15,6 +15,7 @@ import ChatInterface from './components/ChatInterface';
 import CrewConfig from './components/CrewConfig';
 import CrewActionAlert from './components/CrewActionAlert';
 import MarsWeatherMap from './components/MarsWeatherMap';
+import MissionSetup from './components/MissionSetup';
 import SeedLibrary from './components/SeedLibrary';
 
 type TabId = 'dashboard' | 'greenhouse' | 'analytics' | 'control' | 'assistant' | 'crew' | 'weather' | 'seeds';
@@ -33,11 +34,12 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 export default function App() {
   const [state, setState] = useState<SimulationState>(createInitialState);
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
+  const [setupComplete, setSetupComplete] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const tick = useCallback(() => {
     setState(prev => {
-      if (prev.day >= 450) {
+      if (prev.day >= prev.missionDays) {
         return { ...prev, running: false };
       }
       return simulateDay(prev);
@@ -88,6 +90,67 @@ export default function App() {
   const handleConfirmAll = () => {
     setState(prev => confirmAllActions(prev));
   };
+
+  const handleLaunchMission = (config: MissionConfig) => {
+    // Rebuild state from config + current crew
+    const newState = createInitialState(config);
+    newState.crew = structuredClone(state.crew);
+    newState.crewNutrientTarget = calculateCrewNeeds(state.crew);
+    newState.running = true;
+    // Update the initial log to reflect actual crew
+    newState.agentLog[0].reasoning = `Crew nutritional analysis complete: ${state.crew.length} astronauts, target ${Math.round(newState.crewNutrientTarget.dailyCalories)} kcal/day, ${Math.round(newState.crewNutrientTarget.dailyProtein)}g protein/day.`;
+    const zoneDesc = newState.zones.map(z => {
+      const crop = config.selectedSeeds.find(s => s.cropId === z.cropId);
+      return crop ? `${z.cropId} (${crop.area}m²)` : z.cropId;
+    }).join(', ');
+    newState.agentLog[1].message = `Planted initial crop layout: ${zoneDesc}.`;
+    setState(newState);
+    setSetupComplete(true);
+  };
+
+  // ─── Setup Screen: Mission Configuration ───
+  if (!setupComplete) {
+    return (
+      <div className="mars-bg h-screen w-screen flex flex-col overflow-hidden">
+        {/* Background stars */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {Array.from({ length: 60 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-white"
+              style={{
+                width: Math.random() * 2 + 1,
+                height: Math.random() * 2 + 1,
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                opacity: Math.random() * 0.6 + 0.2,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Header */}
+        <div className="relative z-10 text-center pt-6 pb-2">
+          <h1 className="text-5xl font-bold text-white tracking-tight">
+            🚀 Mars 3030 — Mission Setup
+          </h1>
+          <p className="text-lg text-white/60 mt-1">
+            Configure crew, resources, and seeds before launching your greenhouse mission
+          </p>
+        </div>
+
+        {/* Mission Setup Wizard */}
+        <div className="relative z-10 flex-1 min-h-0">
+          <MissionSetup
+            crew={state.crew}
+            crewTarget={state.crewNutrientTarget}
+            onUpdateCrew={handleUpdateCrew}
+            onLaunch={handleLaunchMission}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mars-bg h-screen w-screen flex flex-col p-3 gap-3 overflow-hidden">
