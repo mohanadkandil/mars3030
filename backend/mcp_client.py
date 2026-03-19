@@ -124,7 +124,7 @@ class MCPClient:
         """Use Amazon Bedrock (Nova Lite) to synthesize a final answer from retrieved chunks"""
         context = "\n\n".join([f"Chunk {i+1}:\n{chunk}" for i, chunk in enumerate(context_chunks)])
         
-        prompt = f"""You are TERRA MIND, an AI expert in Mars greenhouse agriculture. 
+        prompt = f"""You are RedHarvester, an AI expert in Mars greenhouse agriculture. 
 Based ON ONLY the following retrieved knowledge base segments, provide a comprehensive and helpful answer to the user's question.
 
 If the information is not in the context, say you don't have enough information in the Mars Crop Knowledge Base, but offer general scientific guidance if possible.

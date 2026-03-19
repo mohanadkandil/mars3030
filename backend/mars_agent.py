@@ -203,7 +203,7 @@ class MarsGreenhouseAgent:
                         get_mars_conditions,
                         calculate_nutrition_plan
                     ],
-                    system_prompt="""You are TERRA MIND, an AI agent specialized in Mars greenhouse management and agriculture optimization.
+                    system_prompt="""You are RedHarvester, an AI agent specialized in Mars greenhouse management and agriculture optimization.
 
 Your expertise includes:
 - Mars environmental conditions and their impact on plant growth
@@ -252,7 +252,7 @@ Always be helpful, scientifically accurate, and focused on practical solutions."
         # Query the knowledge base directly
         kb_response = await self.mcp_client.query_knowledge_base(message)
 
-        return f"""## TERRA MIND Response
+        return f"""## RedHarvester Response
 
 **Query:** {message}
 

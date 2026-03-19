@@ -13,7 +13,7 @@ from mars_agent import get_agent, MarsGreenhouseAgent
 from mcp_client import MCPClient
 
 app = FastAPI(
-    title="TERRA MIND API",
+    title="RedHarvester API",
     description="AI Agent API for Mars Greenhouse Management",
     version="1.0.0"
 )
@@ -35,7 +35,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
-    agent: str = "TERRA MIND"
+    agent: str = "RedHarvester"
     tools_used: List[str] = []
 
 
@@ -77,7 +77,7 @@ class SimulationRequest(BaseModel):
 @app.get("/")
 async def root():
     return {
-        "name": "TERRA MIND API",
+        "name": "RedHarvester API",
         "status": "online",
         "description": "Mars Greenhouse AI Agent",
         "endpoints": {
@@ -93,7 +93,7 @@ async def root():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """
-    Chat with the TERRA MIND AI agent.
+    Chat with the RedHarvester AI agent.
     The agent has access to the Mars crop knowledge base and can analyze
     crop viability, nutrition planning, and greenhouse management.
     """
@@ -102,7 +102,7 @@ async def chat(request: ChatRequest):
         response = await agent.chat(request.message)
         return ChatResponse(
             response=response,
-            agent="TERRA MIND",
+            agent="RedHarvester",
             tools_used=[]  # Could track which tools were used
         )
     except Exception as e:

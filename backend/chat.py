@@ -9,7 +9,7 @@ from mcp_client import MCPClient
 
 async def chat():
     print("\n" + "=" * 60)
-    print("🌱 TERRA MIND - Mars Agriculture Assistant")
+    print("🌱 RedHarvester - Mars Agriculture Assistant")
     print("=" * 60)
     print("Connected to Syngenta Knowledge Base via MCP")
     print("Type 'quit' to exit\n")
@@ -31,11 +31,11 @@ async def chat():
                 print("\nGoodbye!")
                 break
 
-            print("\nTERRA MIND: Thinking...")
+            print("\nRedHarvester: Thinking...")
 
             result = await client.query_knowledge_base(user_input)
 
-            print(f"\nTERRA MIND:\n{result}\n")
+            print(f"\nRedHarvester:\n{result}\n")
             print("-" * 60 + "\n")
 
         except KeyboardInterrupt:
