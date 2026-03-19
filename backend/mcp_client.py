@@ -5,9 +5,13 @@ Connects to the Syngenta knowledge base via MCP protocol
 
 import httpx
 import json
-from typing import Any, Optional
+import os
+from typing import Any, Optional, List
 import asyncio
+import boto3
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class MCPClient:
     """Client for interacting with the Mars Crop Knowledge Base MCP server"""
@@ -16,6 +20,10 @@ class MCPClient:
         self.url = url
         self.client = httpx.AsyncClient(timeout=60.0)
         self.request_id = 0
+        self.bedrock = boto3.client(
+            service_name='bedrock-runtime',
+            region_name=os.getenv("AWS_REGION", "us-east-1")
+        )
 
     def _next_id(self) -> int:
         self.request_id += 1
@@ -75,7 +83,7 @@ class MCPClient:
             "uri": uri
         })
 
-    async def query_knowledge_base(self, query: str, max_results: int = 5) -> str:
+    async def query_knowledge_base(self, query: str, max_results: int = 5, synthesize: bool = True) -> str:
         """
         Query the Mars crop knowledge base with a natural language question
         """
@@ -86,10 +94,68 @@ class MCPClient:
         })
 
         if "result" in result:
+            raw_content = self._extract_raw_content(result["result"])
+            if synthesize and raw_content:
+                return await self.synthesize_answer(query, raw_content)
             return self._format_result(result["result"])
         elif "error" in result:
             return f"Error querying knowledge base: {result['error']}"
         return json.dumps(result, indent=2)
+
+    def _extract_raw_content(self, result: Any) -> List[str]:
+        """Extract raw text chunks from the MCP result"""
+        chunks = []
+        if isinstance(result, dict) and "content" in result:
+            for c in result["content"]:
+                if isinstance(c, dict) and "text" in c:
+                    try:
+                        parsed = json.loads(c["text"])
+                        if "body" in parsed:
+                            body = json.loads(parsed["body"])
+                            if "retrieved_chunks" in body:
+                                for chunk in body["retrieved_chunks"]:
+                                    if "content" in chunk:
+                                        chunks.append(chunk["content"])
+                    except:
+                        chunks.append(c["text"])
+        return chunks
+
+    async def synthesize_answer(self, question: str, context_chunks: List[str]) -> str:
+        """Use Amazon Bedrock (Nova Lite) to synthesize a final answer from retrieved chunks"""
+        context = "\n\n".join([f"Chunk {i+1}:\n{chunk}" for i, chunk in enumerate(context_chunks)])
+        
+        prompt = f"""You are TERRA MIND, an AI expert in Mars greenhouse agriculture. 
+Based ON ONLY the following retrieved knowledge base segments, provide a comprehensive and helpful answer to the user's question.
+
+If the information is not in the context, say you don't have enough information in the Mars Crop Knowledge Base, but offer general scientific guidance if possible.
+
+QUESTION: {question}
+
+RETRIEVED CONTEXT:
+{context}
+
+FINAL ANSWER:"""
+
+        body = json.dumps({
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [{"text": prompt}]
+                }
+            ]
+        })
+
+        try:
+            response = self.bedrock.invoke_model(
+                modelId="amazon.nova-lite-v1:0",
+                body=body
+            )
+            response_body = json.loads(response.get('body').read())
+            # Nova response format: response_body['output']['message']['content'][0]['text']
+            return response_body['output']['message']['content'][0]['text']
+        except Exception as e:
+            print(f"Synthesis error: {e}")
+            return f"Error synthesizing answer: {e}\n\nRaw context:\n\n" + "\n".join(context_chunks[:2])
 
     def _format_result(self, result: Any) -> str:
         """Format the MCP result for display"""
