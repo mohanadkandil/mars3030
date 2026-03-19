@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CropZone } from '../types';
 import { SEED_LIBRARY } from '../data/crops';
@@ -7,6 +7,8 @@ interface Props {
   zones: CropZone[];
   activeEvents: { type: string }[];
   day: number;
+  selectedZoneIndex?: number;
+  onZoneChange?: (index: number) => void;
 }
 
 function getCrop(id: string) {
@@ -229,8 +231,9 @@ function CameraPlantScene({ zone, hasDisease }: { zone: CropZone; hasDisease: bo
   );
 }
 
-export default function CameraFeed({ zones, activeEvents, day }: Props) {
-  const [selectedZone, setSelectedZone] = useState(0);
+export default function CameraFeed({ zones, activeEvents, day, selectedZoneIndex, onZoneChange }: Props) {
+  const selectedZone = selectedZoneIndex ?? 0;
+  const setSelectedZone = (i: number) => onZoneChange?.(i);
   const hasDisease = activeEvents.some(e => e.type === 'crop_disease');
   const zone = zones[selectedZone];
   const crop = getCrop(zone.cropId);
@@ -284,13 +287,27 @@ export default function CameraFeed({ zones, activeEvents, day }: Props) {
 
       {/* Camera viewport */}
       <div className="flex-1 relative rounded-lg overflow-hidden border border-mars-700/50 bg-mars-950">
-        <svg viewBox="0 0 430 260" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-          {/* Dark camera background */}
-          <rect width="430" height="260" fill="rgba(12,10,9,0.95)" />
+        {zone.cropId === 'tomato' ? (
+          /* Real video for tomatoes */
+          <video
+            key="tomato-video"
+            src="/tomatoes_grow.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          /* SVG plant scene for other crops */
+          <svg viewBox="0 0 430 260" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
+            <rect width="430" height="260" fill="rgba(12,10,9,0.95)" />
+            <CameraPlantScene zone={zone} hasDisease={hasDisease} />
+          </svg>
+        )}
 
-          {/* Plant scene */}
-          <CameraPlantScene zone={zone} hasDisease={hasDisease} />
-
+        {/* AI detection + HUD overlay */}
+        <svg viewBox="0 0 430 260" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
           {/* Scan lines */}
           <ScanLines />
 

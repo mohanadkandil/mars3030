@@ -56,12 +56,12 @@ function AstronautCard({ astronaut, index, onUpdate, onRemove }: {
       {/* Main row: large photo left, info right */}
       <div className="flex items-stretch">
         {/* Photo */}
-        <div className="relative w-36 flex-shrink-0">
+        <div className="relative w-36 flex-shrink-0 overflow-hidden">
           {astronaut.photo ? (
             <img
               src={astronaut.photo}
               alt={astronaut.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
             />
           ) : (
             <div className={`w-full h-full bg-gradient-to-br ${AVATAR_COLORS[index % AVATAR_COLORS.length]} flex items-center justify-center`}>

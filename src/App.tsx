@@ -37,6 +37,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [setupComplete, setSetupComplete] = useState(false);
   const [autoApprove, setAutoApprove] = useState(false);
+  const [cameraZoneIndex, setCameraZoneIndex] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const tick = useCallback(() => {
@@ -249,10 +250,10 @@ export default function App() {
         {activeTab === 'greenhouse' && (
           <div className="h-full grid grid-cols-12 gap-3">
             <div className="col-span-7 min-h-0">
-              <GreenhouseGrid zones={state.zones} activeEvents={state.activeEvents} solHour={state.solHour} greenhouseArea={state.greenhouseArea} />
+              <GreenhouseGrid zones={state.zones} activeEvents={state.activeEvents} solHour={state.solHour} greenhouseArea={state.greenhouseArea} onZoneSelect={setCameraZoneIndex} />
             </div>
             <div className="col-span-5 min-h-0">
-              <CameraFeed zones={state.zones} activeEvents={state.activeEvents} day={state.day} />
+              <CameraFeed zones={state.zones} activeEvents={state.activeEvents} day={state.day} selectedZoneIndex={cameraZoneIndex} onZoneChange={setCameraZoneIndex} />
             </div>
           </div>
         )}
