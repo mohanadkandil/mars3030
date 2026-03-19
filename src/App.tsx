@@ -17,12 +17,14 @@ import MarsWeatherMap from './components/MarsWeatherMap';
 import MissionSetup from './components/MissionSetup';
 import SeedLibrary from './components/SeedLibrary';
 import HarvestOrganizer from './components/HarvestOrganizer';
+import LiveCameraFeed from './components/LiveCameraFeed';
 
-type TabId = 'dashboard' | 'greenhouse' | 'analytics' | 'control' | 'assistant' | 'crew' | 'weather' | 'harvest' | 'seeds';
+type TabId = 'dashboard' | 'greenhouse' | 'camera' | 'analytics' | 'control' | 'assistant' | 'crew' | 'weather' | 'harvest' | 'seeds';
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊' },
   { id: 'greenhouse', label: 'Greenhouse', icon: '🌱' },
+  { id: 'camera', label: 'Camera Feed', icon: '📹' },
   { id: 'harvest', label: 'Food & Harvest', icon: '🌾' },
   { id: 'analytics', label: 'Analytics', icon: '📈' },
   { id: 'control', label: 'Mission Control', icon: '🎛️' },
@@ -326,6 +328,11 @@ export default function App() {
             insideTemp={state.insideTemp}
             insideHumidity={state.insideHumidity}
           />
+        )}
+
+        {/* Camera Feed — Full-screen live video */}
+        {activeTab === 'camera' && (
+          <LiveCameraFeed day={state.day} />
         )}
 
         {/* Seed Library — Complete crop catalog with nutrition & Mars suitability */}
