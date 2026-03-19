@@ -8,6 +8,7 @@ interface Props {
   activeEvents: SimEvent[];
   solHour: number;
   greenhouseArea?: number;
+  onZoneSelect?: (zoneIndex: number) => void;
 }
 
 // Greenhouse layout: dynamic grid based on area (1 cell = 1 m²)
@@ -241,7 +242,7 @@ const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 3;
 const ROTATION_STEP = 45; // degrees per click
 
-export default function GreenhouseGrid({ zones, activeEvents, solHour, greenhouseArea = 120 }: Props) {
+export default function GreenhouseGrid({ zones, activeEvents, solHour, greenhouseArea = 120, onZoneSelect }: Props) {
   const { cols: COLS, rows: ROWS } = useMemo(() => getGridDimensions(greenhouseArea), [greenhouseArea]);
   const grid = useMemo(() => buildGrid(zones, COLS, ROWS), [zones, COLS, ROWS]);
   const isDaytime = solHour >= 6 && solHour < 18;
@@ -324,6 +325,10 @@ export default function GreenhouseGrid({ zones, activeEvents, solHour, greenhous
     e.stopPropagation();
     if (!dragRef.current.dragging) {
       setSelectedZone(prev => prev?.id === zone?.id ? null : zone);
+      if (zone && onZoneSelect) {
+        const idx = zones.findIndex(z => z.id === zone.id);
+        if (idx >= 0) onZoneSelect(idx);
+      }
     }
   };
 
@@ -488,11 +493,11 @@ export default function GreenhouseGrid({ zones, activeEvents, solHour, greenhous
                 cellOffset += cellCount;
                 return (
                   <g key={zone.id}>
-                    <rect x={lx - 26} y={ly - 24} width={52} height={18} rx={4} fill="#000" fillOpacity={0.65} />
-                    <text x={lx} y={ly - 13} textAnchor="middle" fill={crop.color} fontSize={7} fontWeight="bold" fontFamily="Inter">
+                    <rect x={lx - 38} y={ly - 26} width={76} height={22} rx={4} fill="#000" fillOpacity={0.7} />
+                    <text x={lx} y={ly - 14} textAnchor="middle" fill={crop.color} fontSize={8} fontWeight="bold" fontFamily="Inter">
                       {crop.emoji} {crop.name}
                     </text>
-                    <text x={lx} y={ly - 5} textAnchor="middle" fill="#aaa" fontSize={5} fontFamily="JetBrains Mono">
+                    <text x={lx} y={ly - 5} textAnchor="middle" fill="#aaa" fontSize={6} fontFamily="JetBrains Mono">
                       {zone.area}m² · {Math.floor(zone.area / crop.spacePerPlant)} plants
                     </text>
                   </g>

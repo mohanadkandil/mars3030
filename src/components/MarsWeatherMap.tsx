@@ -85,6 +85,17 @@ export default function MarsWeatherMap({ weather, solHour, day }: Props) {
           📡 {psgData.source}
           <br />
           Sol {psgData.sol} · Ls {psgData.solarLongitude}°
+          <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-mars-800/40">
+            <svg viewBox="0 0 110 92" className="w-5 h-5 flex-shrink-0" aria-label="NASA logo">
+              <circle cx="55" cy="46" r="44" fill="#0B3D91"/>
+              <circle cx="55" cy="46" r="42" fill="none" stroke="#FC3D21" strokeWidth="2.5"/>
+              <path d="M28 62 L38 28 L45 28 L52 52 L58 28 L65 28 L72 52 L78 28 L85 28 L75 62 L68 62 L60 38 L53 62Z" fill="white" transform="scale(0.7) translate(18,12)"/>
+            </svg>
+            <span className="text-[9px] text-mars-500 leading-tight">
+              Data: <span className="text-mars-400">NASA Planetary Spectrum Generator (PSG)</span>
+              <br />Goddard Space Flight Center
+            </span>
+          </div>
         </div>
       </div>
       <div className="col-span-8 glass rounded-xl p-3 overflow-hidden">
@@ -375,10 +386,6 @@ function SunriseSunsetPanel({ data }: { data: PSGMarsData }) {
               {data.sunset}
             </text>
           </svg>
-        </div>
-
-        <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-orange-600 to-red-900 flex items-center justify-center">
-          <span className="text-mars-300">📍</span>
         </div>
       </div>
 

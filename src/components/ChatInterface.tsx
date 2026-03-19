@@ -1,104 +1,75 @@
 import { useState, useRef, useEffect, useCallback, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import ceresApi, { type Source } from '../services/ceresApi';
+import { initSession, queryKnowledgeBase, getToolDescriptions } from '../services/mcpClient';
 
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  sources?: Source[];
   timestamp: Date;
   loading?: boolean;
 }
 
 const SUGGESTED_PROMPTS = [
-  'What crops grow best on Mars?',
-  'Optimal temperature for potatoes?',
-  'Water requirements per growth stage',
-  'Nutritional needs for 4 astronauts',
-  'Best crop rotation strategy',
-  'How does Martian soil affect growth?',
+  'What crops grow best on Mars and why?',
+  'Optimal temperature for growing potatoes in low gravity?',
+  'Water requirements per crop growth stage',
+  'What happens if the water recycling system fails?',
+  'Nutritional requirements for 4 astronauts over 450 days',
+  'How to handle a dust storm affecting solar panels?',
+  'Best crop rotation strategy for a 120m² greenhouse',
+  'How does Martian soil affect plant growth?',
 ];
 
 let msgId = 0;
 const nextMsgId = () => `msg-${++msgId}`;
 
-function SourceCard({ source, index }: { source: Source; index: number }) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div className="border border-mars-700/30 rounded-lg overflow-hidden bg-mars-900/30">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full px-3 py-2 flex items-center gap-2 text-left hover:bg-mars-800/30 transition-colors"
-      >
-        <span className="text-emerald-400 text-xs">📄</span>
-        <span className="text-[10px] text-mars-300 flex-1 truncate">
-          {source.filename || `Source ${index + 1}`}
-        </span>
-        <span className="text-mars-500 text-[10px]">{expanded ? '▼' : '▶'}</span>
-      </button>
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="px-3 py-2 border-t border-mars-700/20 text-[10px] text-mars-400 max-h-40 overflow-y-auto">
-              {source.content.slice(0, 500)}
-              {source.content.length > 500 && '...'}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 export default function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
-  const [connected, setConnected] = useState<boolean | null>(null);
+  const [connected, setConnected] = useState<boolean | null>(null); // null = not tried
   const [connecting, setConnecting] = useState(false);
+  const [tools, setTools] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
+  // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
+  // Connect to MCP on mount
   const connect = useCallback(async () => {
     setConnecting(true);
     setMessages([{
       id: nextMsgId(),
       role: 'system',
-      content: 'Initializing CERES...',
+      content: 'Connecting to Mars Crop Knowledge Base...',
       timestamp: new Date(),
       loading: true,
     }]);
 
-    const ok = await ceresApi.healthCheck();
+    const ok = await initSession();
     setConnected(ok);
     setConnecting(false);
 
     if (ok) {
-      const status = await ceresApi.getStatus();
+      const toolDescs = await getToolDescriptions();
+      setTools(toolDescs);
       setMessages([{
         id: nextMsgId(),
         role: 'system',
-        content: `**CERES online** — ${status?.tagline || 'Crop Environment Resource & Evaluation System'}\n\nConnected to Syngenta Knowledge Base. Ask anything about Mars agriculture!`,
+        content: `Connected to Mars Crop Knowledge Base!\n\n${toolDescs.length} tool${toolDescs.length !== 1 ? 's' : ''} available. Ask me anything about Martian agriculture, crop management, environmental conditions, or greenhouse operations.`,
         timestamp: new Date(),
       }]);
     } else {
       setMessages([{
         id: nextMsgId(),
         role: 'system',
-        content: 'Could not connect to CERES.\n\nStart the backend:\n```bash\ncd backend && ./run.sh\n```',
+        content: 'Could not connect to the MCP Knowledge Base. This may be due to CORS restrictions (browser → MCP endpoint). For the hackathon, you can:\n\n1. **Use a CORS proxy** or backend relay\n2. **Run via Kiro IDE** which has native MCP support\n3. **Use the offline mode** — try asking questions and I\'ll provide guidance based on built-in crop data\n\nYou can still type questions to test the interface!',
         timestamp: new Date(),
       }]);
     }
@@ -130,30 +101,20 @@ export default function ChatInterface() {
     setInput('');
 
     try {
-      const response = await ceresApi.chat(text.trim());
+      const response = await queryKnowledgeBase(text.trim());
       setMessages(prev =>
         prev.map(m => m.id === loadingMsg.id
-          ? { ...m, content: response.response, sources: response.sources, loading: false }
+          ? { ...m, content: response, loading: false }
           : m
         )
       );
     } catch {
-      try {
-        const fallback = await ceresApi.queryKnowledgeBase(text.trim());
-        setMessages(prev =>
-          prev.map(m => m.id === loadingMsg.id
-            ? { ...m, content: fallback.content, sources: fallback.sources, loading: false }
-            : m
-          )
-        );
-      } catch {
-        setMessages(prev =>
-          prev.map(m => m.id === loadingMsg.id
-            ? { ...m, content: 'Failed to connect. Is the backend running?', loading: false }
-            : m
-          )
-        );
-      }
+      setMessages(prev =>
+        prev.map(m => m.id === loadingMsg.id
+          ? { ...m, content: 'Failed to get a response. The knowledge base may be temporarily unavailable.', loading: false }
+          : m
+        )
+      );
     }
   };
 
@@ -164,34 +125,37 @@ export default function ChatInterface() {
 
   return (
     <div className="glass rounded-2xl p-3 h-full flex flex-col overflow-hidden">
+      {/* Header */}
       <div className="flex items-center justify-between mb-3 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-sm font-bold text-white">
-            C
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-sm">
+            🤖
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-mars-300">CERES</h3>
-            <p className="text-[10px] text-mars-600">Crop Environment Resource & Evaluation System</p>
+            <h3 className="text-sm font-semibold text-mars-300">Mars Crop AI Assistant</h3>
+            <p className="text-[10px] text-mars-600">Powered by Syngenta Knowledge Base via MCP</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Connection status */}
           <div className="flex items-center gap-1.5">
             <div className={`w-2 h-2 rounded-full ${
               connected === null ? 'bg-mars-600' :
-              connected ? 'bg-emerald-400' : 'bg-alert-400'
+              connected ? 'bg-bio-400' : 'bg-alert-400'
             }`}>
               {connecting && (
                 <motion.div
-                  className="w-2 h-2 rounded-full bg-teal-400"
+                  className="w-2 h-2 rounded-full bg-blue-400"
                   animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
                   transition={{ repeat: Infinity, duration: 1 }}
                 />
               )}
             </div>
             <span className="text-[10px] text-mars-500">
-              {connecting ? 'Connecting...' : connected ? 'Online' : connected === false ? 'Offline' : ''}
+              {connecting ? 'Connecting...' : connected ? 'Connected' : connected === false ? 'Offline' : ''}
             </span>
           </div>
+          {/* Reconnect button */}
           {connected === false && (
             <button
               onClick={connect}
@@ -203,6 +167,23 @@ export default function ChatInterface() {
         </div>
       </div>
 
+      {/* Available tools info */}
+      {tools.length > 0 && (
+        <div className="mb-2 shrink-0">
+          <details className="text-[10px]">
+            <summary className="text-mars-500 cursor-pointer hover:text-mars-400 transition-colors">
+              {tools.length} Knowledge Base tools available
+            </summary>
+            <div className="mt-1 p-2 rounded-lg bg-mars-900/50 text-mars-500 space-y-0.5 max-h-20 overflow-y-auto">
+              {tools.map((t, i) => (
+                <div key={i} dangerouslySetInnerHTML={{ __html: t.replace(/\*\*(.*?)\*\*/g, '<strong class="text-mars-400">$1</strong>') }} />
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+
+      {/* Messages */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1 scrollbar-thin">
         <AnimatePresence initial={false}>
           {messages.map(msg => (
@@ -213,55 +194,54 @@ export default function ChatInterface() {
               transition={{ duration: 0.2 }}
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[90%] rounded-xl px-3 py-2 ${
+              <div className={`max-w-[85%] rounded-xl px-3 py-2 ${
                 msg.role === 'user'
                   ? 'bg-gradient-to-r from-rust-500/30 to-rust-400/20 border border-rust-500/20'
                   : msg.role === 'system'
                   ? 'bg-mars-800/50 border border-mars-700/30'
-                  : 'bg-mars-850/60 border border-emerald-500/10'
+                  : 'bg-mars-850/60 border border-purple-500/10'
               }`}>
+                {/* Role label */}
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[9px] font-semibold uppercase tracking-wider" style={{
-                    color: msg.role === 'user' ? '#f97316' : msg.role === 'system' ? '#64748b' : '#34d399',
+                    color: msg.role === 'user' ? '#f97316' : msg.role === 'system' ? '#64748b' : '#a78bfa',
                   }}>
-                    {msg.role === 'user' ? 'You' : msg.role === 'system' ? 'System' : 'CERES'}
+                    {msg.role === 'user' ? 'You' : msg.role === 'system' ? 'System' : 'AI Assistant'}
                   </span>
                   <span className="text-[8px] text-mars-700">
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-
+                {/* Content */}
                 {msg.loading ? (
                   <div className="flex items-center gap-1.5">
-                    <motion.div className="w-1.5 h-1.5 rounded-full bg-emerald-400" animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0 }} />
-                    <motion.div className="w-1.5 h-1.5 rounded-full bg-emerald-400" animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }} />
-                    <motion.div className="w-1.5 h-1.5 rounded-full bg-emerald-400" animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} />
+                    <motion.div className="w-1.5 h-1.5 rounded-full bg-purple-400" animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0 }} />
+                    <motion.div className="w-1.5 h-1.5 rounded-full bg-purple-400" animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }} />
+                    <motion.div className="w-1.5 h-1.5 rounded-full bg-purple-400" animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} />
                   </div>
                 ) : (
-                  <>
-                    <div className="text-xs text-mars-300 leading-relaxed prose prose-invert prose-xs max-w-none prose-headings:text-mars-200 prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-1 prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-code:text-emerald-400 prose-code:bg-mars-900/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-mars-900/70 prose-pre:border prose-pre:border-mars-700/30 prose-strong:text-mars-200">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
-
-                    {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-mars-700/20">
-                        <p className="text-[9px] text-mars-500 uppercase tracking-wider mb-2">
-                          📚 Sources ({msg.sources.length})
-                        </p>
-                        <div className="space-y-1.5">
-                          {msg.sources.map((source, i) => (
-                            <SourceCard key={i} source={source} index={i} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
+                  <div className="text-xs text-mars-300 leading-relaxed prose prose-invert prose-xs max-w-none
+                    prose-headings:text-mars-200 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1
+                    prose-h1:text-sm prose-h2:text-xs prose-h3:text-xs
+                    prose-p:my-1 prose-p:text-mars-300
+                    prose-strong:text-mars-200
+                    prose-ul:my-1 prose-ul:pl-4 prose-ol:my-1 prose-ol:pl-4
+                    prose-li:my-0.5 prose-li:text-mars-300
+                    prose-code:text-purple-300 prose-code:bg-mars-900/60 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-[11px]
+                    prose-pre:bg-mars-900/80 prose-pre:border prose-pre:border-mars-700/30 prose-pre:rounded-lg prose-pre:my-2
+                    prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+                    prose-hr:border-mars-700/40 prose-hr:my-2
+                    prose-blockquote:border-l-purple-500/40 prose-blockquote:text-mars-400 prose-blockquote:my-2
+                  ">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
                 )}
               </div>
             </motion.div>
           ))}
         </AnimatePresence>
 
+        {/* Suggested prompts — show only when no user messages yet */}
         {messages.filter(m => m.role === 'user').length === 0 && (
           <div className="pt-2">
             <p className="text-[10px] text-mars-600 mb-2">Try asking:</p>
@@ -270,7 +250,7 @@ export default function ChatInterface() {
                 <button
                   key={i}
                   onClick={() => sendMessage(prompt)}
-                  className="text-[10px] px-2.5 py-1.5 rounded-lg bg-mars-800/50 border border-mars-700/30 text-mars-400 hover:text-mars-300 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all duration-200 text-left"
+                  className="text-[10px] px-2.5 py-1.5 rounded-lg bg-mars-800/50 border border-mars-700/30 text-mars-400 hover:text-mars-300 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all duration-200 text-left"
                 >
                   {prompt}
                 </button>
@@ -280,18 +260,20 @@ export default function ChatInterface() {
         )}
       </div>
 
+      {/* Input */}
       <form onSubmit={handleSubmit} className="mt-3 shrink-0 flex gap-2">
         <input
+          ref={inputRef}
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="Ask CERES about Mars agriculture..."
-          className="flex-1 bg-mars-900/60 border border-mars-700/40 rounded-xl px-4 py-2.5 text-xs text-mars-300 placeholder:text-mars-700 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+          placeholder="Ask about Mars agriculture, crop data, greenhouse operations..."
+          className="flex-1 bg-mars-900/60 border border-mars-700/40 rounded-xl px-4 py-2.5 text-xs text-mars-300 placeholder:text-mars-700 focus:outline-none focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/20 transition-all"
         />
         <button
           type="submit"
           disabled={!input.trim()}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:from-emerald-500 hover:to-teal-500 transition-all shadow-lg shadow-emerald-500/10"
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:from-purple-500 hover:to-blue-500 transition-all shadow-lg shadow-purple-500/10"
         >
           Send
         </button>

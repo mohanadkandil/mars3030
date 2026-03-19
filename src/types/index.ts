@@ -137,11 +137,14 @@ export interface SimulationState {
 
 export interface DaySnapshot {
   day: number;
-  calories: number;
-  protein: number;
+  calories: number;        // actual consumed kcal this day
+  protein: number;         // actual consumed protein (g)
+  dailyOutput: number;     // theoretical daily yield from growing crops (kcal)
   water: number;
   energy: number;
   avgHealth: number;
+  cropStores: Record<string, number>;    // cropId -> kg currently stored
+  cropHarvested: Record<string, number>; // cropId -> cumulative kg harvested
 }
 
 export interface SimEvent {
@@ -178,6 +181,8 @@ export type ActivityLevel = 'low' | 'moderate' | 'high';
 export interface Astronaut {
   id: string;
   name: string;
+  title?: string;                // e.g. 'Commander', 'Flight Engineer'
+  photo?: string;                // path to profile image in public/
   age: number;
   gender: Gender;
   weightKg: number;
@@ -237,10 +242,11 @@ export interface SeedAllocation {
 export interface PendingCrewAction {
   id: string;
   day: number;
-  type: 'harvest' | 'replant';
+  type: 'harvest' | 'replant' | 'water_mining' | 'water_rationing';
   zoneId: string;
   cropId: string;           // current crop (for harvest) or new crop (for replant)
   description: string;
   reasoning: string;
   newCropId?: string;       // only for replant — what the agent recommends
+  waterYield?: number;      // liters expected from mining expedition
 }

@@ -94,10 +94,10 @@ export function createInitialState(config?: MissionConfig): SimulationState {
   } else {
     zones = [
       { id: 'z1', cropId: 'lettuce', plantedDay: 0, area: 25, health: 95, growthProgress: 0, waterStress: 0, harvested: false },
-      { id: 'z2', cropId: 'potato',  plantedDay: 0, area: 30, health: 92, growthProgress: 0, waterStress: 0, harvested: false },
-      { id: 'z3', cropId: 'beans',   plantedDay: 0, area: 25, health: 97, growthProgress: 0, waterStress: 0, harvested: false },
-      { id: 'z4', cropId: 'radish',  plantedDay: 0, area: 20, health: 93, growthProgress: 0, waterStress: 0, harvested: false },
-      { id: 'z5', cropId: 'herbs',   plantedDay: 0, area: 20, health: 96, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z2', cropId: 'potato',  plantedDay: 0, area: 25, health: 92, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z3', cropId: 'tomato',  plantedDay: 0, area: 25, health: 94, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z4', cropId: 'beans',   plantedDay: 0, area: 25, health: 97, growthProgress: 0, waterStress: 0, harvested: false },
+      { id: 'z5', cropId: 'radish',  plantedDay: 0, area: 20, health: 93, growthProgress: 0, waterStress: 0, harvested: false },
     ];
   }
 
@@ -147,7 +147,7 @@ export function createInitialState(config?: MissionConfig): SimulationState {
         id: nextLogId(),
         day: 1,
         type: 'info',
-        message: `AresFarm AI Agent initialized. Beginning ${missionDays}-day greenhouse management protocol.`,
+        message: `RedHarvester AI Agent initialized. Beginning ${missionDays}-day greenhouse management protocol.`,
         reasoning: `Crew nutritional analysis complete: ${crew.length} astronauts, target ${Math.round(crewNutrientTarget.dailyCalories)} kcal/day, ${Math.round(crewNutrientTarget.dailyProtein)}g protein/day based on individual BMR, activity levels, and body composition.`,
       },
       {
@@ -200,10 +200,55 @@ export function simulateDay(state: SimulationState): SimulationState {
   // Water balance
   let waterMultiplier = 1;
   if (hasPumpFailure) waterMultiplier = 0.5;
+  // Water rationing mode: if active, cut irrigation by 40%
+  const isRationing = next.activeEvents.some(e => e.type === 'pump_failure' && e.id.startsWith('water-ration'));
+  if (isRationing) waterMultiplier *= 0.6;
   const dailyWaterUse = next.zones.filter(z => !z.harvested).reduce((sum, z) => sum + getCrop(z.cropId).waterPerDay * z.area, 0);
+  const crewWaterUse = next.crew.length * 3; // ~3 L/day per astronaut (drinking + hygiene, ISS baseline)
   const actualWaterDelivered = dailyWaterUse * waterMultiplier;
-  next.waterReservoir = Math.min(next.waterCapacity, next.waterReservoir - actualWaterDelivered + next.waterRecycleRate);
+  // Atmospheric water extraction: ~1-2 L/day from Mars' trace humidity
+  const atmosphericExtraction = 1.5 + Math.random() * 0.5;
+  // Transpiration recovery from greenhouse plants (proportional to growing area)
+  const growingArea = next.zones.filter(z => !z.harvested).reduce((sum, z) => sum + z.area, 0);
+  const transpirationRecovery = growingArea * 0.02; // ~0.02 L/m²/day recovered
+  const totalRecovery = next.waterRecycleRate + atmosphericExtraction + transpirationRecovery;
+  next.waterReservoir = Math.min(next.waterCapacity, next.waterReservoir - actualWaterDelivered - crewWaterUse + totalRecovery);
   if (next.waterReservoir < 0) next.waterReservoir = 0;
+
+  // Water crisis detection — trigger crew actions
+  const waterPct = next.waterReservoir / next.waterCapacity;
+  const hasPendingWaterAction = next.pendingActions.some(a => a.type === 'water_mining' || a.type === 'water_rationing');
+  if (!hasPendingWaterAction) {
+    if (waterPct < 0.15) {
+      // Critical: offer ice mining expedition (big yield, requires EVA crew time)
+      const expectedYield = 400 + Math.round(Math.random() * 200); // 400-600 L from regolith ice
+      next.pendingActions.push({
+        id: `pa-${nextLogId()}`,
+        day: next.day,
+        type: 'water_mining',
+        zoneId: '',
+        cropId: '',
+        description: `CRITICAL: Water at ${Math.round(waterPct * 100)}%. Deploy crew for regolith ice mining expedition (~${expectedYield} L).`,
+        reasoning: `Water reservoir dangerously low (${Math.round(next.waterReservoir)} L / ${next.waterCapacity} L). Mars subsurface ice deposits confirmed at site. EVA crew can heat-extract ~${expectedYield} L from regolith. Current daily deficit: ${Math.round(actualWaterDelivered + crewWaterUse - totalRecovery)} L/day.`,
+        waterYield: expectedYield,
+      });
+      next.wasRunningBeforePause = next.running;
+      next.running = false;
+    } else if (waterPct < 0.30) {
+      // Warning: offer water rationing (reduce irrigation 40% for 10 days)
+      next.pendingActions.push({
+        id: `pa-${nextLogId()}`,
+        day: next.day,
+        type: 'water_rationing',
+        zoneId: '',
+        cropId: '',
+        description: `Water at ${Math.round(waterPct * 100)}%. Activate water rationing protocol (reduce irrigation 40% for 10 sols).`,
+        reasoning: `Water level dropping (${Math.round(next.waterReservoir)} L / ${next.waterCapacity} L). Rationing reduces crop irrigation by 40%, slowing growth but extending reserves ~${Math.round(next.waterReservoir / Math.max(1, actualWaterDelivered + crewWaterUse - totalRecovery))} more sols. Atmospheric extraction (${atmosphericExtraction.toFixed(1)} L/day) and transpiration recovery (${transpirationRecovery.toFixed(1)} L/day) cannot keep up alone.`,
+      });
+      next.wasRunningBeforePause = next.running;
+      next.running = false;
+    }
+  }
 
   // Temperature management
   if (hasTempSpike) {
@@ -451,17 +496,23 @@ export function simulateDay(state: SimulationState): SimulationState {
     });
   }
 
-  // Record history
-  if (next.day % 3 === 0 || next.day <= 5) {
-    next.history.push({
-      day: next.day,
-      calories: Math.round(next.dailyCalories),
-      protein: Math.round(next.dailyProtein),
-      water: Math.round(next.waterReservoir),
-      energy: Math.round(next.energyStored),
-      avgHealth: Math.round(avgHealth),
-    });
-  }
+  // Record history every day — use actual consumed values from today's consumption log
+  const todayConsumption = next.consumptionLog[next.consumptionLog.length - 1];
+  next.history.push({
+    day: next.day,
+    calories: Math.round(todayConsumption?.totalCalories ?? 0),
+    protein: Math.round(todayConsumption?.totalProtein ?? 0),
+    dailyOutput: Math.round(next.dailyCalories),
+    water: Math.round(next.waterReservoir),
+    energy: Math.round(next.energyStored),
+    avgHealth: Math.round(avgHealth),
+    cropStores: Object.fromEntries(
+      Object.entries(next.foodStores).map(([id, s]) => [id, Math.round(s.kgStored * 10) / 10])
+    ),
+    cropHarvested: Object.fromEntries(
+      Object.entries(next.foodStores).map(([id, s]) => [id, Math.round(s.totalHarvestedKg * 10) / 10])
+    ),
+  });
 
   // Trim log to last 50 entries
   if (next.agentLog.length > 50) next.agentLog = next.agentLog.slice(0, 50);
@@ -594,6 +645,39 @@ export function confirmAction(state: SimulationState, actionId: string): Simulat
       message: newCropId !== zone.cropId
         ? `Crew replanted Zone ${zone.id.replace('z', '')}: ${oldCrop.name} → ${newCrop.name}.`
         : `Crew replanted Zone ${zone.id.replace('z', '')} with ${newCrop.name}.`,
+      reasoning: action.reasoning,
+    });
+  }
+
+  if (action.type === 'water_mining') {
+    const yield_ = action.waterYield ?? 500;
+    next.waterReservoir = Math.min(next.waterCapacity, next.waterReservoir + yield_);
+    next.agentLog.unshift({
+      id: nextLogId(),
+      day: next.day,
+      type: 'action',
+      message: `Crew completed ice mining EVA — extracted ${yield_} L of water from regolith deposits.`,
+      reasoning: action.reasoning,
+    });
+  }
+
+  if (action.type === 'water_rationing') {
+    // Add a pseudo-event to track rationing for 10 days
+    next.activeEvents.push({
+      id: `water-ration-${next.day}`,
+      type: 'pump_failure', // reuse type for waterMultiplier check
+      name: 'Water Rationing',
+      description: 'Irrigation reduced by 40% to conserve water reserves.',
+      severity: 1,
+      startDay: next.day,
+      duration: 10,
+      active: true,
+    });
+    next.agentLog.unshift({
+      id: nextLogId(),
+      day: next.day,
+      type: 'warning',
+      message: `Water rationing activated for 10 sols — irrigation reduced 40%.`,
       reasoning: action.reasoning,
     });
   }

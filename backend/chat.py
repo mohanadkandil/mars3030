@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
+"""
+Interactive Chat with Mars Crop Knowledge Base via MCP
+"""
+
 import asyncio
 from mcp_client import MCPClient
 
 
 async def chat():
     print("\n" + "=" * 60)
-    print("🌱 CERES — Crop Environment Resource & Evaluation System")
+    print("🌱 RedHarvester - Mars Agriculture Assistant")
     print("=" * 60)
-    print("Connected to Syngenta Mars Crop Knowledge Base via MCP")
+    print("Connected to Syngenta Knowledge Base via MCP")
     print("Type 'quit' to exit\n")
 
     client = MCPClient()
 
     print("Initializing MCP connection...")
-    await client.initialize()
-    print("Connected!\n")
+    init_result = await client.initialize()
+    print(f"Connected!\n")
 
     while True:
         try:
@@ -27,11 +31,11 @@ async def chat():
                 print("\nGoodbye!")
                 break
 
-            print("\n🌱 CERES: Thinking...")
+            print("\nRedHarvester: Thinking...")
 
             result = await client.query_knowledge_base(user_input)
 
-            print(f"\n🌱 CERES:\n{result}\n")
+            print(f"\nRedHarvester:\n{result}\n")
             print("-" * 60 + "\n")
 
         except KeyboardInterrupt:

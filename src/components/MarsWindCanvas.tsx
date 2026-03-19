@@ -12,6 +12,17 @@ interface Particle {
   maxAge: number;
 }
 
+// Viewport: zoom into greenhouse area (center=0.71,0.40)
+const VIEW_CENTER = { x: 0.71, y: 0.40 };
+const VIEW_SPAN = { x: 0.35, y: 0.35 };
+
+function worldToScreen(wx: number, wy: number): [number, number] {
+  return [
+    (wx - VIEW_CENTER.x + VIEW_SPAN.x / 2) / VIEW_SPAN.x,
+    (wy - VIEW_CENTER.y + VIEW_SPAN.y / 2) / VIEW_SPAN.y,
+  ];
+}
+
 function generateTopoMap(width: number, height: number): ImageData {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -27,6 +38,8 @@ function generateTopoMap(width: number, height: number): ImageData {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
+  const zoomFactor = 1 / VIEW_SPAN.x;
+
   const features = [
     { x: 0.22, y: 0.48, rx: 0.12, ry: 0.18, color: '#c4823c', opacity: 0.6 },
     { x: 0.13, y: 0.40, rx: 0.04, ry: 0.04, color: '#e8c4a0', opacity: 0.5 },
@@ -41,8 +54,13 @@ function generateTopoMap(width: number, height: number): ImageData {
   ];
 
   features.forEach(f => {
+    const [sx, sy] = worldToScreen(f.x, f.y);
     ctx.beginPath();
-    ctx.ellipse(f.x * width, f.y * height, f.rx * width, f.ry * height, 0, 0, Math.PI * 2);
+    ctx.ellipse(
+      sx * width, sy * height,
+      f.rx * zoomFactor * width, f.ry * zoomFactor * height,
+      0, 0, Math.PI * 2
+    );
     ctx.fillStyle = f.color;
     ctx.globalAlpha = f.opacity;
     ctx.fill();
@@ -161,7 +179,7 @@ export default function MarsWindCanvas({ weather }: Props) {
     const offCtx = offscreen.getContext('2d')!;
 
     if (!topoImageRef.current) {
-      topoImageRef.current = generateTopoMap(width, height);
+      topoImageRef.current = null as any; // topo map disabled
     }
 
     const particleCount = Math.min(800, 200 + weather.windSpeed * 30);
@@ -182,7 +200,7 @@ export default function MarsWindCanvas({ weather }: Props) {
     }
 
     const animate = () => {
-      offCtx.fillStyle = 'rgba(10, 10, 15, 0.04)';
+      offCtx.fillStyle = 'rgba(15, 10, 8, 0.03)';
       offCtx.fillRect(0, 0, width, height);
 
       const particles = particlesRef.current;
@@ -227,16 +245,12 @@ export default function MarsWindCanvas({ weather }: Props) {
         offCtx.stroke();
       });
 
-      ctx.putImageData(topoImageRef.current!, 0, 0);
+      ctx.drawImage(offscreen, 0, 0);
 
       if (weather.dustOpacity > 1) {
-        ctx.fillStyle = `rgba(146, 64, 14, ${Math.min(0.4, weather.dustOpacity * 0.1)})`;
+        ctx.fillStyle = `rgba(146, 64, 14, ${Math.min(0.3, weather.dustOpacity * 0.08)})`;
         ctx.fillRect(0, 0, width, height);
       }
-
-      ctx.globalAlpha = 0.9;
-      ctx.drawImage(offscreen, 0, 0);
-      ctx.globalAlpha = 1;
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 0.5;
@@ -255,8 +269,9 @@ export default function MarsWindCanvas({ weather }: Props) {
         ctx.stroke();
       }
 
-      const ghX = 0.71 * width;
-      const ghY = 0.40 * height;
+      const [ghSx, ghSy] = worldToScreen(0.71, 0.40);
+      const ghX = ghSx * width;
+      const ghY = ghSy * height;
 
       const pulseRadius = 12 + Math.sin(Date.now() / 300) * 4;
       ctx.beginPath();

@@ -19,6 +19,19 @@ function ActionCard({ action, onConfirm, onDismiss }: {
   onDismiss: () => void;
 }) {
   const isHarvest = action.type === 'harvest';
+  const isWater = action.type === 'water_mining' || action.type === 'water_rationing';
+  const isMining = action.type === 'water_mining';
+
+  const iconBg = isWater ? 'bg-water-500/20' : isHarvest ? 'bg-bio-500/20' : 'bg-sun-500/20';
+  const icon = isMining ? '⛏️' : action.type === 'water_rationing' ? '💧' : isHarvest ? '🌾' : getCropEmoji(action.newCropId || action.cropId);
+  const badgeBg = isWater ? 'bg-water-500/20 text-water-400' : isHarvest ? 'bg-bio-500/20 text-bio-400' : 'bg-sun-500/20 text-sun-400';
+  const badgeText = isMining ? 'Ice Mining' : action.type === 'water_rationing' ? 'Water Rationing' : isHarvest ? 'Harvest' : 'Replant';
+  const confirmBg = isWater
+    ? 'bg-water-500/30 text-water-300 hover:bg-water-500/50 active:scale-95'
+    : isHarvest
+      ? 'bg-bio-500/30 text-bio-300 hover:bg-bio-500/50 active:scale-95'
+      : 'bg-sun-500/30 text-sun-300 hover:bg-sun-500/50 active:scale-95';
+  const confirmLabel = isMining ? '⛏️ Deploy Crew' : action.type === 'water_rationing' ? '💧 Activate Rationing' : isHarvest ? '✅ Harvest Now' : '🌱 Plant Now';
 
   return (
     <motion.div
@@ -26,25 +39,19 @@ function ActionCard({ action, onConfirm, onDismiss }: {
       initial={{ opacity: 0, scale: 0.9, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, y: -10 }}
-      className="bg-mars-900/90 border border-mars-700 rounded-xl p-4 backdrop-blur-sm"
+      className={`bg-mars-900/90 border rounded-xl p-4 backdrop-blur-sm ${isWater ? 'border-water-500/40' : 'border-mars-700'}`}
     >
       <div className="flex items-start gap-3">
         {/* Icon */}
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 ${
-          isHarvest ? 'bg-bio-500/20' : 'bg-sun-500/20'
-        }`}>
-          {isHarvest ? '🌾' : getCropEmoji(action.newCropId || action.cropId)}
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 ${iconBg}`}>
+          {icon}
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-              isHarvest
-                ? 'bg-bio-500/20 text-bio-400'
-                : 'bg-sun-500/20 text-sun-400'
-            }`}>
-              {isHarvest ? 'Harvest' : 'Replant'}
+            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${badgeBg}`}>
+              {badgeText}
             </span>
             <span className="text-[10px] text-mars-500">Sol {action.day}</span>
           </div>
@@ -58,13 +65,9 @@ function ActionCard({ action, onConfirm, onDismiss }: {
       <div className="flex gap-2 mt-3 ml-15">
         <button
           onClick={onConfirm}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
-            isHarvest
-              ? 'bg-bio-500/30 text-bio-300 hover:bg-bio-500/50 active:scale-95'
-              : 'bg-sun-500/30 text-sun-300 hover:bg-sun-500/50 active:scale-95'
-          }`}
+          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${confirmBg}`}
         >
-          {isHarvest ? '✅ Harvest Now' : '🌱 Plant Now'}
+          {confirmLabel}
         </button>
         <button
           onClick={onDismiss}

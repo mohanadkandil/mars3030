@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CropZone } from '../types';
 import { SEED_LIBRARY } from '../data/crops';
@@ -7,6 +7,8 @@ interface Props {
   zones: CropZone[];
   activeEvents: { type: string }[];
   day: number;
+  selectedZoneIndex?: number;
+  onZoneChange?: (index: number) => void;
 }
 
 function getCrop(id: string) {
@@ -24,6 +26,109 @@ interface Detection {
   confidence: number;
   color: string;
   type: 'ripeness' | 'disease' | 'health';
+}
+
+/* Realistic detections for the tomato timelapse video.
+   Boxes are anchored to approximate plant positions in the video and
+   jitter slightly each tick to mimic real-time CV inference. */
+function generateTomatoVideoDetections(tick: number, growthProgress: number): Detection[] {
+  const dets: Detection[] = [];
+
+  // Approximate plant cluster positions visible in the tomato video (viewBox 430×260)
+  const plants: { x: number; y: number; w: number; h: number }[] = [
+    { x: 55, y: 60, w: 65, h: 80 },
+    { x: 150, y: 45, w: 70, h: 95 },
+    { x: 260, y: 55, w: 60, h: 85 },
+    { x: 345, y: 50, w: 55, h: 90 },
+    { x: 100, y: 140, w: 60, h: 70 },
+    { x: 210, y: 150, w: 55, h: 65 },
+    { x: 310, y: 145, w: 50, h: 60 },
+  ];
+
+  // Small pseudo-random jitter per tick to simulate tracking
+  const jitter = (seed: number) => Math.sin(tick * 0.7 + seed * 3.7) * 2;
+
+  // Detection categories cycle so not all show at once — feels like scanning
+  const frameGroup = Math.floor(tick / 3) % 4; // cycle every ~3s
+
+  plants.forEach((p, i) => {
+    const jx = jitter(i);
+    const jy = jitter(i + 10);
+    const visible = (i + frameGroup) % 4 !== 0; // hide ~1/4 each cycle
+
+    if (!visible) return;
+
+    // Determine detection type based on growth & position
+    let label: string;
+    let color: string;
+    let confidence: number;
+    let type: Detection['type'] = 'ripeness';
+
+    if (growthProgress >= 0.9) {
+      // Late stage — fruit ripeness
+      const ripeness = ['Ripe Fruit', 'Mature Fruit', 'HARVEST READY', 'Fruit Cluster'];
+      label = ripeness[i % ripeness.length];
+      color = i % 3 === 0 ? '#f59e0b' : '#22c55e';
+      confidence = 0.91 + (i % 7) * 0.01;
+    } else if (growthProgress >= 0.6) {
+      // Mid stage — mixed detections
+      const labels = ['Green Fruit', 'Flower Cluster', 'Fruit Setting', 'Truss Detected', 'Leaf Canopy'];
+      label = labels[i % labels.length];
+      color = i % 2 === 0 ? '#0ea5e9' : '#22c55e';
+      confidence = 0.83 + (i % 9) * 0.01;
+    } else if (growthProgress >= 0.3) {
+      // Early-mid — vegetation
+      const labels = ['Stem Growth', 'Leaf Node', 'Vegetative', 'New Branch', 'Leaf Expansion'];
+      label = labels[i % labels.length];
+      color = '#0ea5e9';
+      confidence = 0.76 + (i % 12) * 0.01;
+    } else {
+      // Seedling
+      const labels = ['Seedling', 'Cotyledon', 'First True Leaf', 'Emerging'];
+      label = labels[i % labels.length];
+      color = '#8b5cf6';
+      confidence = 0.68 + (i % 15) * 0.01;
+    }
+
+    // Shrink boxes for early growth, expand for later
+    const scale = 0.5 + growthProgress * 0.5;
+
+    dets.push({
+      id: `tv-${i}`,
+      x: Math.round(p.x + jx),
+      y: Math.round(p.y + jy),
+      w: Math.round(p.w * scale),
+      h: Math.round(p.h * scale),
+      label,
+      confidence: Math.min(0.99, confidence),
+      color,
+      type,
+    });
+  });
+
+  // Add environment/system detections occasionally
+  if (frameGroup === 0) {
+    dets.push({
+      id: 'tv-env-light',
+      x: 15, y: 5, w: 400, h: 18,
+      label: 'LED Grow Light Bar — Active',
+      confidence: 0.98,
+      color: '#a78bfa',
+      type: 'health',
+    });
+  }
+  if (frameGroup === 2) {
+    dets.push({
+      id: 'tv-env-drip',
+      x: 30, y: 215, w: 370, h: 20,
+      label: 'Drip Irrigation Line — Flow OK',
+      confidence: 0.95,
+      color: '#06b6d4',
+      type: 'health',
+    });
+  }
+
+  return dets;
 }
 
 function generateDetections(zone: CropZone, hasDisease: boolean): Detection[] {
@@ -229,15 +334,27 @@ function CameraPlantScene({ zone, hasDisease }: { zone: CropZone; hasDisease: bo
   );
 }
 
-export default function CameraFeed({ zones, activeEvents, day }: Props) {
-  const [selectedZone, setSelectedZone] = useState(0);
+export default function CameraFeed({ zones, activeEvents, day, selectedZoneIndex, onZoneChange }: Props) {
+  const selectedZone = selectedZoneIndex ?? 0;
+  const setSelectedZone = (i: number) => onZoneChange?.(i);
   const hasDisease = activeEvents.some(e => e.type === 'crop_disease');
   const zone = zones[selectedZone];
   const crop = getCrop(zone.cropId);
+  const isTomato = zone.cropId === 'tomato';
+
+  // Tick counter for animating video detections (~1 Hz)
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!isTomato) return;
+    const id = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [isTomato]);
 
   const detections = useMemo(
-    () => generateDetections(zone, hasDisease),
-    [zone.id, zone.growthProgress, zone.health, hasDisease, zone.plantedDay]
+    () => isTomato
+      ? generateTomatoVideoDetections(tick, zone.growthProgress)
+      : generateDetections(zone, hasDisease),
+    [isTomato, tick, zone.id, zone.growthProgress, zone.health, hasDisease, zone.plantedDay]
   );
 
   const diseaseDetections = detections.filter(d => d.type === 'disease');
@@ -284,19 +401,33 @@ export default function CameraFeed({ zones, activeEvents, day }: Props) {
 
       {/* Camera viewport */}
       <div className="flex-1 relative rounded-lg overflow-hidden border border-mars-700/50 bg-mars-950">
-        <svg viewBox="0 0 430 260" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-          {/* Dark camera background */}
-          <rect width="430" height="260" fill="rgba(12,10,9,0.95)" />
+        {zone.cropId === 'tomato' ? (
+          /* Real video for tomatoes */
+          <video
+            key="tomato-video"
+            src="/annotated.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-contain"
+          />
+        ) : (
+          /* SVG plant scene for other crops */
+          <svg viewBox="0 0 430 260" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
+            <rect width="430" height="260" fill="rgba(12,10,9,0.95)" />
+            <CameraPlantScene zone={zone} hasDisease={hasDisease} />
+          </svg>
+        )}
 
-          {/* Plant scene */}
-          <CameraPlantScene zone={zone} hasDisease={hasDisease} />
-
+        {/* AI detection + HUD overlay (skip for tomato — annotations baked into video) */}
+        <svg viewBox="0 0 430 260" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
           {/* Scan lines */}
-          <ScanLines />
+          {!isTomato && <ScanLines />}
 
           {/* AI Detection bounding boxes */}
           <AnimatePresence>
-            {detections.slice(0, 8).map((det) => (
+            {!isTomato && detections.slice(0, 8).map((det) => (
               <motion.g
                 key={det.id}
                 initial={{ opacity: 0 }}
@@ -339,7 +470,9 @@ export default function CameraFeed({ zones, activeEvents, day }: Props) {
             ZONE {String.fromCharCode(65 + selectedZone)} | {crop.name.toUpperCase()} | {zone.area}m²
           </text>
           <text x={10} y={252} fontSize={8} fill="rgba(255,255,255,0.25)" fontFamily="JetBrains Mono">
-            ARESFARM AI VISION v2.1 | RESOLUTION 1920x1080 | IR+VISIBLE
+            {isTomato
+              ? `REDHARVESTER CV v2.1 | YOLOv8-Crop | FPS 24 | FRAME ${(tick * 24 + Math.floor(Math.random() * 5)) % 9999}`
+              : 'REDHARVESTER AI VISION v2.1 | RESOLUTION 1920x1080 | IR+VISIBLE'}
           </text>
 
           {/* Crosshair center indicator */}
@@ -354,23 +487,48 @@ export default function CameraFeed({ zones, activeEvents, day }: Props) {
 
       {/* Detection summary bar */}
       <div className="mt-2 flex items-center gap-3 px-1">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-sm bg-bio-400" />
-          <span className="text-[10px] text-mars-400 font-mono">{ripenessDetections.length} plants</span>
-        </div>
-        {diseaseDetections.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <motion.div className="w-2 h-2 rounded-sm bg-alert-400"
-              animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1 }} />
-            <span className="text-[10px] text-alert-400 font-mono font-semibold">{diseaseDetections.length} disease</span>
-          </div>
+        {isTomato ? (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-sm bg-bio-400" />
+              <span className="text-[10px] text-mars-400 font-mono">{detections.filter(d => d.type === 'ripeness').length} objects</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-sm bg-purple-400" />
+              <span className="text-[10px] text-mars-400 font-mono">{detections.filter(d => d.type === 'health').length} infra</span>
+            </div>
+            <div className="ml-auto text-[10px] text-mars-500 font-mono tabular-nums">
+              <motion.span
+                key={tick}
+                initial={{ opacity: 0.5 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                {detections.length} detections · {Math.round(23.5 + Math.sin(tick) * 0.5)}fps
+              </motion.span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-sm bg-bio-400" />
+              <span className="text-[10px] text-mars-400 font-mono">{ripenessDetections.length} plants</span>
+            </div>
+            {diseaseDetections.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <motion.div className="w-2 h-2 rounded-sm bg-alert-400"
+                  animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1 }} />
+                <span className="text-[10px] text-alert-400 font-mono font-semibold">{diseaseDetections.length} disease</span>
+              </div>
+            )}
+            <div className="ml-auto text-[10px] text-mars-600 font-mono">
+              {zone.growthProgress >= 0.95 ? '🟡 Ready to harvest' :
+               zone.growthProgress >= 0.75 ? '🟢 Ripening nicely' :
+               zone.growthProgress >= 0.4 ? '🔵 Active growth' :
+               '🟣 Early stage'}
+            </div>
+          </>
         )}
-        <div className="ml-auto text-[10px] text-mars-600 font-mono">
-          {zone.growthProgress >= 0.95 ? '🟡 Ready to harvest' :
-           zone.growthProgress >= 0.75 ? '🟢 Ripening nicely' :
-           zone.growthProgress >= 0.4 ? '🔵 Active growth' :
-           '🟣 Early stage'}
-        </div>
       </div>
     </div>
   );

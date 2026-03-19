@@ -453,7 +453,7 @@ export default function MissionSetup({ crew, crewTarget, onUpdateCrew, onLaunch 
                   <div className="glass rounded-2xl p-5 border border-orange-400/30 bg-orange-500/5">
                     <div className="flex items-center justify-between mb-3">
                       <h2 className="text-lg font-bold text-orange-300 flex items-center gap-2">
-                        🤖 AresFarm AI — Recommended Crop Layout
+                        🤖 RedHarvester AI — Recommended Crop Layout
                       </h2>
                       <button
                         onClick={runOptimizer}
